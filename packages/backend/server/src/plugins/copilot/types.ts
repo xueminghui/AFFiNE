@@ -14,7 +14,7 @@ export enum CopilotProviderType {
   OpenAI = 'openai',
 }
 
-export enum CopilotProviderCapability {
+export enum CopilotCapability {
   TextToText = 'text-to-text',
   TextToEmbedding = 'text-to-embedding',
   TextToImage = 'text-to-image',
@@ -22,7 +22,7 @@ export enum CopilotProviderCapability {
 }
 
 export interface CopilotProvider {
-  getCapabilities(): CopilotProviderCapability[];
+  getCapabilities(): CopilotCapability[];
 }
 
 export const ChatMessageSchema = z
@@ -53,8 +53,8 @@ export interface CopilotTextToImageProvider extends CopilotProvider {}
 export interface CopilotImageToImageProvider extends CopilotProvider {}
 
 export type CapabilityToCopilotProvider = {
-  [CopilotProviderCapability.TextToText]: CopilotTextToTextProvider;
-  [CopilotProviderCapability.TextToEmbedding]: CopilotTextToEmbeddingProvider;
-  [CopilotProviderCapability.TextToImage]: CopilotTextToImageProvider;
-  [CopilotProviderCapability.ImageToImage]: CopilotImageToImageProvider;
+  [CopilotCapability.TextToText]: CopilotTextToTextProvider;
+  [CopilotCapability.TextToEmbedding]: CopilotTextToEmbeddingProvider;
+  [CopilotCapability.TextToImage]: CopilotTextToImageProvider;
+  [CopilotCapability.ImageToImage]: CopilotImageToImageProvider;
 };
