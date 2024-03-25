@@ -1,4 +1,4 @@
-import type { ServiceCollection } from '@toeverything/infra';
+import type { Framework } from '@toeverything/infra';
 import {
   GlobalState,
   Workspace,
@@ -16,14 +16,14 @@ import { WorkspaceLocalStateImpl } from './local-state';
 export * from './cloud';
 export * from './local';
 
-export function configureWorkspaceImplServices(services: ServiceCollection) {
+export function configureWorkspaceImplServices(services: Framework) {
   services
-    .addImpl(WorkspaceListProvider('affine-cloud'), CloudWorkspaceListProvider)
-    .addImpl(WorkspaceFactory('affine-cloud'), CloudWorkspaceFactory)
-    .addImpl(WorkspaceListProvider('local'), LocalWorkspaceListProvider)
-    .addImpl(WorkspaceFactory('local'), LocalWorkspaceFactory)
+    .impl(WorkspaceListProvider('affine-cloud'), CloudWorkspaceListProvider)
+    .impl(WorkspaceFactory('affine-cloud'), CloudWorkspaceFactory)
+    .impl(WorkspaceListProvider('local'), LocalWorkspaceListProvider)
+    .impl(WorkspaceFactory('local'), LocalWorkspaceFactory)
     .scope(WorkspaceScope)
-    .addImpl(WorkspaceLocalState, WorkspaceLocalStateImpl, [
+    .impl(WorkspaceLocalState, WorkspaceLocalStateImpl, [
       Workspace,
       GlobalState,
     ]);

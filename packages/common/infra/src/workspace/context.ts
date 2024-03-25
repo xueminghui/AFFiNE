@@ -23,7 +23,7 @@ import { nanoid } from 'nanoid';
 import type { Awareness } from 'y-protocols/awareness.js';
 import type { Doc as YDoc } from 'yjs';
 
-import type { ServiceCollection } from '../di';
+import type { Framework } from '../di';
 import { createIdentifier } from '../di';
 import { BlobEngine } from './engine/blob';
 import { globalBlockSuiteSchema } from './global-schema';
@@ -46,14 +46,14 @@ export const WorkspaceIdContext =
   createIdentifier<string>('WorkspaceIdContext');
 
 export function configureWorkspaceContext(
-  services: ServiceCollection,
+  services: Framework,
   workspaceMetadata: WorkspaceMetadata
 ) {
   services
     .scope(WorkspaceScope)
-    .addImpl(WorkspaceMetadataContext, workspaceMetadata)
-    .addImpl(WorkspaceIdContext, workspaceMetadata.id)
-    .addImpl(BlockSuiteWorkspaceContext, provider => {
+    .impl(WorkspaceMetadataContext, workspaceMetadata)
+    .impl(WorkspaceIdContext, workspaceMetadata.id)
+    .impl(BlockSuiteWorkspaceContext, provider => {
       return new DocCollection({
         id: workspaceMetadata.id,
         blobStorages: [
@@ -65,12 +65,12 @@ export function configureWorkspaceContext(
         schema: globalBlockSuiteSchema,
       });
     })
-    .addImpl(
+    .impl(
       AwarenessContext,
       provider =>
         provider.get(BlockSuiteWorkspaceContext).awarenessStore.awareness
     )
-    .addImpl(
+    .impl(
       RootYDocContext,
       provider => provider.get(BlockSuiteWorkspaceContext).doc
     );

@@ -1,10 +1,10 @@
-import type { ServiceCollection } from '../di';
+import type { Framework } from '../di';
 import { createIdentifier } from '../di';
 
 export interface WorkspaceFactory {
   name: string;
 
-  configureWorkspace(services: ServiceCollection): void;
+  configureWorkspace(services: Framework): void;
 
   /**
    * get blob without open workspace

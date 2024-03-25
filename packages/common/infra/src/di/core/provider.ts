@@ -1,4 +1,4 @@
-import type { ServiceCollection } from './collection';
+import type { Framework } from './collection';
 import {
   CircularDependencyError,
   MissingDependencyError,
@@ -7,9 +7,9 @@ import {
 } from './error';
 import { parseIdentifier } from './identifier';
 import type {
+  ComponentVariant,
   GeneralServiceIdentifier,
-  ServiceIdentifierValue,
-  ServiceVariant,
+  IdentifierValue,
 } from './types';
 
 export interface ResolveOptions {
@@ -17,16 +17,13 @@ export interface ResolveOptions {
   optional?: boolean;
 }
 
-export abstract class ServiceProvider {
-  abstract collection: ServiceCollection;
-  abstract getRaw(
-    identifier: ServiceIdentifierValue,
-    options?: ResolveOptions
-  ): any;
+export abstract class FrameworkProvider {
+  abstract collection: Framework;
+  abstract getRaw(identifier: IdentifierValue, options?: ResolveOptions): any;
   abstract getAllRaw(
-    identifier: ServiceIdentifierValue,
+    identifier: IdentifierValue,
     options?: ResolveOptions
-  ): Map<ServiceVariant, any>;
+  ): Map<ComponentVariant, any>;
 
   get<T>(identifier: GeneralServiceIdentifier<T>, options?: ResolveOptions): T {
     return this.getRaw(parseIdentifier(identifier), {
@@ -38,7 +35,7 @@ export abstract class ServiceProvider {
   getAll<T>(
     identifier: GeneralServiceIdentifier<T>,
     options?: ResolveOptions
-  ): Map<ServiceVariant, T> {
+  ): Map<ComponentVariant, T> {
     return this.getAllRaw(parseIdentifier(identifier), {
       ...options,
     });
@@ -56,9 +53,9 @@ export abstract class ServiceProvider {
 }
 
 export class ServiceCachePool {
-  cache: Map<string, Map<ServiceVariant, any>> = new Map();
+  cache: Map<string, Map<ComponentVariant, any>> = new Map();
 
-  getOrInsert(identifier: ServiceIdentifierValue, insert: () => any) {
+  getOrInsert(identifier: IdentifierValue, insert: () => any) {
     const cache = this.cache.get(identifier.identifierName) ?? new Map();
     if (!cache.has(identifier.variant)) {
       cache.set(identifier.variant, insert());
@@ -69,11 +66,11 @@ export class ServiceCachePool {
   }
 }
 
-export class ServiceResolver extends ServiceProvider {
+export class ServiceResolver extends FrameworkProvider {
   constructor(
     public readonly provider: BasicServiceProvider,
     public readonly depth = 0,
-    public readonly stack: ServiceIdentifierValue[] = []
+    public readonly stack: IdentifierValue[] = []
   ) {
     super();
   }
@@ -81,7 +78,7 @@ export class ServiceResolver extends ServiceProvider {
   collection = this.provider.collection;
 
   getRaw(
-    identifier: ServiceIdentifierValue,
+    identifier: IdentifierValue,
     { sameScope = false, optional = false }: ResolveOptions = {}
   ) {
     const factory = this.provider.collection.getFactory(
@@ -120,9 +117,9 @@ export class ServiceResolver extends ServiceProvider {
   }
 
   getAllRaw(
-    identifier: ServiceIdentifierValue,
+    identifier: IdentifierValue,
     { sameScope = false }: ResolveOptions = {}
-  ): Map<ServiceVariant, any> {
+  ): Map<ComponentVariant, any> {
     const vars = this.provider.collection.getFactoryAll(
       identifier,
       this.provider.scope
@@ -136,7 +133,7 @@ export class ServiceResolver extends ServiceProvider {
       return new Map();
     }
 
-    const result = new Map<ServiceVariant, any>();
+    const result = new Map<ComponentVariant, any>();
 
     for (const [variant, factory] of vars) {
       const service = this.provider.cache.getOrInsert(
@@ -163,7 +160,7 @@ export class ServiceResolver extends ServiceProvider {
     return result;
   }
 
-  track(identifier: ServiceIdentifierValue): ServiceResolver {
+  track(identifier: IdentifierValue): ServiceResolver {
     const depth = this.depth + 1;
     if (depth >= 100) {
       throw new RecursionLimitError();
@@ -184,32 +181,32 @@ export class ServiceResolver extends ServiceProvider {
   }
 }
 
-export class BasicServiceProvider extends ServiceProvider {
+export class BasicServiceProvider extends FrameworkProvider {
   public readonly cache = new ServiceCachePool();
-  public readonly collection: ServiceCollection;
+  public readonly collection: Framework;
 
   constructor(
-    collection: ServiceCollection,
+    collection: Framework,
     public readonly scope: string[],
-    public readonly parent: ServiceProvider | null
+    public readonly parent: FrameworkProvider | null
   ) {
     super();
     this.collection = collection.clone();
-    this.collection.addValue(ServiceProvider, this, {
+    this.collection.addValue(FrameworkProvider, this, {
       scope: scope,
       override: true,
     });
   }
 
-  getRaw(identifier: ServiceIdentifierValue, options?: ResolveOptions) {
+  getRaw(identifier: IdentifierValue, options?: ResolveOptions) {
     const resolver = new ServiceResolver(this);
     return resolver.getRaw(identifier, options);
   }
 
   getAllRaw(
-    identifier: ServiceIdentifierValue,
+    identifier: IdentifierValue,
     options?: ResolveOptions
-  ): Map<ServiceVariant, any> {
+  ): Map<ComponentVariant, any> {
     const resolver = new ServiceResolver(this);
     return resolver.getAllRaw(identifier, options);
   }

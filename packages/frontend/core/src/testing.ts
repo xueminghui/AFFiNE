@@ -2,8 +2,8 @@ import { WorkspaceFlavour } from '@affine/env/workspace';
 import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
 import {
   configureTestingInfraServices,
+  Framework,
   PageManager,
-  ServiceCollection,
   WorkspaceManager,
 } from '@toeverything/infra';
 
@@ -11,7 +11,7 @@ import { CurrentWorkspaceService } from './modules/workspace';
 import { configureWebServices } from './web';
 
 export async function configureTestingEnvironment() {
-  const serviceCollection = new ServiceCollection();
+  const serviceCollection = new Framework();
 
   configureWebServices(serviceCollection);
   configureTestingInfraServices(serviceCollection);

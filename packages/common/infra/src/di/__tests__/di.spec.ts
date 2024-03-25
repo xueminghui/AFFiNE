@@ -5,39 +5,39 @@ import {
   createIdentifier,
   createScope,
   DuplicateServiceDefinitionError,
+  Framework,
+  FrameworkProvider,
   MissingDependencyError,
   RecursionLimitError,
-  ServiceCollection,
   ServiceNotFoundError,
-  ServiceProvider,
 } from '../';
 
 describe('di', () => {
   test('basic', () => {
-    const serviceCollection = new ServiceCollection();
+    const serviceCollection = new Framework();
     class TestService {
       a = 'b';
     }
 
-    serviceCollection.add(TestService);
+    serviceCollection.service(TestService);
 
     const provider = serviceCollection.provider();
     expect(provider.get(TestService)).toEqual({ a: 'b' });
   });
 
   test('size', () => {
-    const serviceCollection = new ServiceCollection();
+    const serviceCollection = new Framework();
     class TestService {
       a = 'b';
     }
 
-    serviceCollection.add(TestService);
+    serviceCollection.service(TestService);
 
-    expect(serviceCollection.size).toEqual(1);
+    expect(serviceCollection.componentCount).toEqual(1);
   });
 
   test('dependency', () => {
-    const serviceCollection = new ServiceCollection();
+    const serviceCollection = new Framework();
 
     class A {
       value = 'hello world';
@@ -51,7 +51,7 @@ describe('di', () => {
       constructor(public b: B) {}
     }
 
-    serviceCollection.add(A).add(B, [A]).add(C, [B]);
+    serviceCollection.service(A).service(B, [A]).service(C, [B]);
 
     const provider = serviceCollection.provider();
 
@@ -73,15 +73,15 @@ describe('di', () => {
       constructor(public animal: Animal) {}
     }
 
-    const serviceCollection = new ServiceCollection();
-    serviceCollection.addImpl(Animal, Cat).add(Zoo, [Animal]);
+    const serviceCollection = new Framework();
+    serviceCollection.impl(Animal, Cat).service(Zoo, [Animal]);
 
     const provider = serviceCollection.provider();
     expect(provider.get(Zoo).animal.name).toEqual('cat');
   });
 
   test('variant', () => {
-    const serviceCollection = new ServiceCollection();
+    const serviceCollection = new Framework();
 
     interface USB {
       speed: number;
@@ -104,9 +104,9 @@ describe('di', () => {
     }
 
     serviceCollection
-      .addImpl(USB('A'), TypeA)
-      .addImpl(USB('C'), TypeC)
-      .add(PC, [USB('A'), [USB]]);
+      .impl(USB('A'), TypeA)
+      .impl(USB('C'), TypeC)
+      .service(PC, [USB('A'), [USB]]);
 
     const provider = serviceCollection.provider();
     expect(provider.get(USB('A')).speed).toEqual(100);
@@ -116,7 +116,7 @@ describe('di', () => {
   });
 
   test('lazy initialization', () => {
-    const serviceCollection = new ServiceCollection();
+    const serviceCollection = new Framework();
     interface Command {
       shortcut: string;
       callback: () => void;
@@ -153,13 +153,13 @@ describe('di', () => {
       }
     }
 
-    serviceCollection.add(PageSystem);
-    serviceCollection.add(CommandSystem, [[Command]]);
-    serviceCollection.addImpl(Command('switch'), p => ({
+    serviceCollection.service(PageSystem);
+    serviceCollection.service(CommandSystem, [[Command]]);
+    serviceCollection.impl(Command('switch'), p => ({
       shortcut: 'option+s',
       callback: () => p.get(PageSystem).switchToEdgeless(),
     }));
-    serviceCollection.addImpl(Command('rename'), p => ({
+    serviceCollection.impl(Command('rename'), p => ({
       shortcut: 'f2',
       callback: () => p.get(PageSystem).rename(),
     }));
@@ -183,7 +183,7 @@ describe('di', () => {
   });
 
   test('duplicate, override', () => {
-    const serviceCollection = new ServiceCollection();
+    const serviceCollection = new Framework();
 
     const something = createIdentifier<any>('USB');
 
@@ -195,14 +195,14 @@ describe('di', () => {
       b = 'i am B';
     }
 
-    serviceCollection.addImpl(something, A).override(something, B);
+    serviceCollection.impl(something, A).override(something, B);
 
     const provider = serviceCollection.provider();
     expect(provider.get(something)).toEqual({ b: 'i am B' });
   });
 
   test('scope', () => {
-    const services = new ServiceCollection();
+    const services = new Framework();
 
     const workspaceScope = createScope('workspace');
     const pageScope = createScope('page', workspaceScope);
@@ -212,14 +212,14 @@ describe('di', () => {
       appName = 'affine';
     }
 
-    services.add(System);
+    services.service(System);
 
     class Workspace {
       name = 'workspace';
       constructor(public system: System) {}
     }
 
-    services.scope(workspaceScope).add(Workspace, [System]);
+    services.scope(workspaceScope).service(Workspace, [System]);
     class Page {
       name = 'page';
       constructor(
@@ -228,14 +228,14 @@ describe('di', () => {
       ) {}
     }
 
-    services.scope(pageScope).add(Page, [System, Workspace]);
+    services.scope(pageScope).service(Page, [System, Workspace]);
 
     class Editor {
       name = 'editor';
       constructor(public page: Page) {}
     }
 
-    services.scope(editorScope).add(Editor, [Page]);
+    services.scope(editorScope).service(Editor, [Page]);
 
     const root = services.provider();
     expect(root.get(System).appName).toEqual('affine');
@@ -256,7 +256,7 @@ describe('di', () => {
   });
 
   test('service not found', () => {
-    const serviceCollection = new ServiceCollection();
+    const serviceCollection = new Framework();
 
     const provider = serviceCollection.provider();
     expect(() => provider.get(createIdentifier('SomeService'))).toThrowError(
@@ -265,7 +265,7 @@ describe('di', () => {
   });
 
   test('missing dependency', () => {
-    const serviceCollection = new ServiceCollection();
+    const serviceCollection = new Framework();
 
     class A {
       value = 'hello world';
@@ -275,14 +275,14 @@ describe('di', () => {
       constructor(public a: A) {}
     }
 
-    serviceCollection.add(B, [A]);
+    serviceCollection.service(B, [A]);
 
     const provider = serviceCollection.provider();
     expect(() => provider.get(B)).toThrowError(MissingDependencyError);
   });
 
   test('circular dependency', () => {
-    const serviceCollection = new ServiceCollection();
+    const serviceCollection = new Framework();
 
     class A {
       constructor(public c: C) {}
@@ -296,7 +296,7 @@ describe('di', () => {
       constructor(public b: B) {}
     }
 
-    serviceCollection.add(A, [C]).add(B, [A]).add(C, [B]);
+    serviceCollection.service(A, [C]).service(B, [A]).service(C, [B]);
 
     const provider = serviceCollection.provider();
     expect(() => provider.get(A)).toThrowError(CircularDependencyError);
@@ -305,26 +305,26 @@ describe('di', () => {
   });
 
   test('duplicate service definition', () => {
-    const serviceCollection = new ServiceCollection();
+    const serviceCollection = new Framework();
 
     class A {}
 
-    serviceCollection.add(A);
-    expect(() => serviceCollection.add(A)).toThrowError(
+    serviceCollection.service(A);
+    expect(() => serviceCollection.service(A)).toThrowError(
       DuplicateServiceDefinitionError
     );
 
     class B {}
     const Something = createIdentifier('something');
-    serviceCollection.addImpl(Something, A);
-    expect(() => serviceCollection.addImpl(Something, B)).toThrowError(
+    serviceCollection.impl(Something, A);
+    expect(() => serviceCollection.impl(Something, B)).toThrowError(
       DuplicateServiceDefinitionError
     );
   });
 
   test('recursion limit', () => {
     // maxmium resolve depth is 100
-    const serviceCollection = new ServiceCollection();
+    const serviceCollection = new Framework();
     const Something = createIdentifier('something');
     let i = 0;
     for (; i < 100; i++) {
@@ -334,7 +334,7 @@ describe('di', () => {
         constructor(_next: any) {}
       }
 
-      serviceCollection.addImpl(Something(i.toString()), Test, [
+      serviceCollection.impl(Something(i.toString()), Test, [
         Something(next.toString()),
       ]);
     }
@@ -342,7 +342,7 @@ describe('di', () => {
     class Final {
       a = 'b';
     }
-    serviceCollection.addImpl(Something(i.toString()), Final);
+    serviceCollection.impl(Something(i.toString()), Final);
     const provider = serviceCollection.provider();
     expect(() => provider.get(Something('0'))).toThrowError(
       RecursionLimitError
@@ -350,8 +350,8 @@ describe('di', () => {
   });
 
   test('self resolve', () => {
-    const serviceCollection = new ServiceCollection();
+    const serviceCollection = new Framework();
     const provider = serviceCollection.provider();
-    expect(provider.get(ServiceProvider)).toEqual(provider);
+    expect(provider.get(FrameworkProvider)).toEqual(provider);
   });
 });

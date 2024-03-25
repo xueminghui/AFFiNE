@@ -1,4 +1,4 @@
-import type { ServiceProvider } from '../di';
+import type { FrameworkProvider } from '../di';
 import { ObjectPool } from '../utils/object-pool';
 import type { Workspace } from '../workspace';
 import type { PageRecordList } from '.';
@@ -12,7 +12,7 @@ export class PageManager {
   constructor(
     private readonly workspace: Workspace,
     private readonly pageRecordList: PageRecordList,
-    private readonly serviceProvider: ServiceProvider
+    private readonly serviceProvider: FrameworkProvider
   ) {}
 
   open(pageId: string) {

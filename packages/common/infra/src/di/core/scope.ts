@@ -1,13 +1,13 @@
 import { ROOT_SCOPE } from './consts';
-import type { ServiceScope } from './types';
+import type { FrameworkLayer } from './types';
 
 export function createScope(
   name: string,
-  base: ServiceScope = ROOT_SCOPE
-): ServiceScope {
+  base: FrameworkLayer = ROOT_SCOPE
+): FrameworkLayer {
   return [...base, name];
 }
 
-export function stringifyScope(scope: ServiceScope): string {
+export function stringifyLayer(scope: FrameworkLayer): string {
   return scope.join('/');
 }

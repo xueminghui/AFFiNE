@@ -11,8 +11,8 @@ export * from './testing';
 export * from './upgrade';
 export * from './workspace';
 
-import type { ServiceCollection } from '../di';
-import { ServiceProvider } from '../di';
+import type { Framework } from '../di';
+import { FrameworkProvider } from '../di';
 import { CleanupService } from '../lifecycle';
 import { GlobalCache, GlobalState, MemoryMemento } from '../storage';
 import {
@@ -43,49 +43,49 @@ import {
 import { WorkspaceUpgradeController } from './upgrade';
 import { Workspace } from './workspace';
 
-export function configureWorkspaceServices(services: ServiceCollection) {
+export function configureWorkspaceServices(services: Framework) {
   // global scope
   services
-    .add(WorkspaceManager, [
+    .service(WorkspaceManager, [
       WorkspaceListService,
       [WorkspaceFactory],
-      ServiceProvider,
+      FrameworkProvider,
     ])
-    .add(WorkspaceListService, [[WorkspaceListProvider], GlobalCache]);
+    .service(WorkspaceListService, [[WorkspaceListProvider], GlobalCache]);
 
   // workspace scope
   services
     .scope(WorkspaceScope)
-    .add(CleanupService)
-    .add(Workspace, [
+    .service(CleanupService)
+    .service(Workspace, [
       WorkspaceMetadataContext,
       WorkspaceEngine,
       BlockSuiteWorkspaceContext,
       WorkspaceUpgradeController,
-      ServiceProvider,
+      FrameworkProvider,
     ])
-    .add(WorkspaceEngine, [
+    .service(WorkspaceEngine, [
       BlobEngine,
       DocEngine,
       AwarenessEngine,
       RootYDocContext,
     ])
-    .add(AwarenessEngine, [[AwarenessProvider]])
-    .add(BlobEngine, [LocalBlobStorage, [RemoteBlobStorage]])
-    .addImpl(DocEngine, services => {
+    .service(AwarenessEngine, [[AwarenessProvider]])
+    .service(BlobEngine, [LocalBlobStorage, [RemoteBlobStorage]])
+    .impl(DocEngine, services => {
       return new DocEngine(
         services.get(DocStorageImpl),
         services.getOptional(DocServerImpl)
       );
     })
-    .add(WorkspaceUpgradeController, [
+    .service(WorkspaceUpgradeController, [
       BlockSuiteWorkspaceContext,
       DocEngine,
       WorkspaceMetadataContext,
     ]);
 }
 
-export function configureTestingWorkspaceServices(services: ServiceCollection) {
+export function configureTestingWorkspaceServices(services: Framework) {
   services
     .override(WorkspaceListProvider('affine-cloud'), null)
     .override(WorkspaceFactory('affine-cloud'), null)

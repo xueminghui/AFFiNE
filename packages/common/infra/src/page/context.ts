@@ -1,6 +1,6 @@
 import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
 
-import type { ServiceCollection } from '../di';
+import type { Framework } from '../di';
 import { createIdentifier } from '../di';
 import type { PageRecord } from './record';
 import { PageScope } from './service-scope';
@@ -13,12 +13,12 @@ export const PageRecordContext =
   createIdentifier<PageRecord>('PageRecordContext');
 
 export function configurePageContext(
-  services: ServiceCollection,
+  services: Framework,
   blockSuitePage: BlockSuiteDoc,
   pageRecord: PageRecord
 ) {
   services
     .scope(PageScope)
-    .addImpl(PageRecordContext, pageRecord)
-    .addImpl(BlockSuitePageContext, blockSuitePage);
+    .impl(PageRecordContext, pageRecord)
+    .impl(BlockSuitePageContext, blockSuitePage);
 }

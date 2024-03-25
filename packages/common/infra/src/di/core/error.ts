@@ -1,5 +1,5 @@
 import { DEFAULT_SERVICE_VARIANT } from './consts';
-import type { ServiceIdentifierValue } from './types';
+import type { IdentifierValue } from './types';
 
 export class RecursionLimitError extends Error {
   constructor() {
@@ -8,7 +8,7 @@ export class RecursionLimitError extends Error {
 }
 
 export class CircularDependencyError extends Error {
-  constructor(public readonly dependencyStack: ServiceIdentifierValue[]) {
+  constructor(public readonly dependencyStack: IdentifierValue[]) {
     super(
       `A circular dependency was detected.\n` +
         stringifyDependencyStack(dependencyStack)
@@ -17,16 +17,16 @@ export class CircularDependencyError extends Error {
 }
 
 export class ServiceNotFoundError extends Error {
-  constructor(public readonly identifier: ServiceIdentifierValue) {
+  constructor(public readonly identifier: IdentifierValue) {
     super(`Service ${stringifyIdentifier(identifier)} not found in container`);
   }
 }
 
 export class MissingDependencyError extends Error {
   constructor(
-    public readonly from: ServiceIdentifierValue,
-    public readonly target: ServiceIdentifierValue,
-    public readonly dependencyStack: ServiceIdentifierValue[]
+    public readonly from: IdentifierValue,
+    public readonly target: IdentifierValue,
+    public readonly dependencyStack: IdentifierValue[]
   ) {
     super(
       `Missing dependency ${stringifyIdentifier(
@@ -39,12 +39,12 @@ export class MissingDependencyError extends Error {
 }
 
 export class DuplicateServiceDefinitionError extends Error {
-  constructor(public readonly identifier: ServiceIdentifierValue) {
+  constructor(public readonly identifier: IdentifierValue) {
     super(`Service ${stringifyIdentifier(identifier)} already exists`);
   }
 }
 
-function stringifyIdentifier(identifier: ServiceIdentifierValue) {
+function stringifyIdentifier(identifier: IdentifierValue) {
   return `[${identifier.identifierName}]${
     identifier.variant !== DEFAULT_SERVICE_VARIANT
       ? `(${identifier.variant})`
@@ -52,7 +52,7 @@ function stringifyIdentifier(identifier: ServiceIdentifierValue) {
   }`;
 }
 
-function stringifyDependencyStack(dependencyStack: ServiceIdentifierValue[]) {
+function stringifyDependencyStack(dependencyStack: IdentifierValue[]) {
   return dependencyStack
     .map(identifier => `${stringifyIdentifier(identifier)}`)
     .join(' -> ');

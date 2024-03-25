@@ -1,5 +1,5 @@
 import { configureWorkspaceImplServices } from '@affine/workspace-impl';
-import type { ServiceCollection } from '@toeverything/infra';
+import type { Framework } from '@toeverything/infra';
 import { configureInfraServices } from '@toeverything/infra';
 
 import {
@@ -7,7 +7,7 @@ import {
   configureWebInfraServices,
 } from './modules/services';
 
-export function configureWebServices(services: ServiceCollection) {
+export function configureWebServices(services: Framework) {
   configureInfraServices(services);
   configureWebInfraServices(services);
   configureBusinessServices(services);

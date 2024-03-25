@@ -2,7 +2,7 @@ import { DebugLogger } from '@affine/debug';
 import { Slot } from '@blocksuite/global/utils';
 import type { DocCollection } from '@blocksuite/store';
 
-import type { ServiceProvider } from '../di';
+import type { FrameworkProvider } from '../di';
 import { CleanupService } from '../lifecycle';
 import type { WorkspaceEngine, WorkspaceEngineStatus } from './engine';
 import type { WorkspaceMetadata } from './metadata';
@@ -70,7 +70,7 @@ export class Workspace {
     public engine: WorkspaceEngine,
     public docCollection: DocCollection,
     public upgrade: WorkspaceUpgradeController,
-    public services: ServiceProvider
+    public services: FrameworkProvider
   ) {
     this._status = {
       mode: 'closed',

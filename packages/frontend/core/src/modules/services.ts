@@ -1,4 +1,4 @@
-import type { ServiceCollection } from '@toeverything/infra';
+import type { Framework } from '@toeverything/infra';
 import {
   GlobalCache,
   GlobalState,
@@ -23,8 +23,8 @@ import {
   WorkspacePropertiesAdapter,
 } from './workspace';
 
-export function configureBusinessServices(services: ServiceCollection) {
-  services.add(CurrentWorkspaceService);
+export function configureBusinessServices(services: Framework) {
+  services.service(CurrentWorkspaceService);
   services
     .scope(WorkspaceScope)
     .add(Workbench)
@@ -37,8 +37,8 @@ export function configureBusinessServices(services: ServiceCollection) {
     .add(TagService, [WorkspaceLegacyProperties, PageRecordList]);
 }
 
-export function configureWebInfraServices(services: ServiceCollection) {
+export function configureWebInfraServices(services: Framework) {
   services
-    .addImpl(GlobalCache, LocalStorageGlobalCache)
-    .addImpl(GlobalState, LocalStorageGlobalState);
+    .impl(GlobalCache, LocalStorageGlobalCache)
+    .impl(GlobalState, LocalStorageGlobalState);
 }

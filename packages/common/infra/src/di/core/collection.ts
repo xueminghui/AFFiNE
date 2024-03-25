@@ -1,17 +1,17 @@
 import { DEFAULT_SERVICE_VARIANT, ROOT_SCOPE } from './consts';
 import { DuplicateServiceDefinitionError } from './error';
 import { parseIdentifier } from './identifier';
-import type { ServiceProvider } from './provider';
+import type { FrameworkProvider } from './provider';
 import { BasicServiceProvider } from './provider';
-import { stringifyScope } from './scope';
+import { stringifyLayer } from './scope';
 import type {
+  ComponentFactory,
+  ComponentVariant,
+  FrameworkLayer,
   GeneralServiceIdentifier,
-  ServiceFactory,
-  ServiceIdentifier,
-  ServiceIdentifierType,
-  ServiceIdentifierValue,
-  ServiceScope,
-  ServiceVariant,
+  Identifier,
+  IdentifierType,
+  IdentifierValue,
   Type,
   TypesToDeps,
 } from './types';
@@ -98,10 +98,10 @@ import type {
  * services.addFactory(ServiceB, (provider) => new ServiceB(provider.getAll(FeatureA)));
  * ```
  */
-export class ServiceCollection {
-  private readonly services: Map<
+export class Framework {
+  private readonly components: Map<
     string,
-    Map<string, Map<ServiceVariant, ServiceFactory>>
+    Map<string, Map<ComponentVariant, ComponentFactory>>
   > = new Map();
 
   /**
@@ -110,89 +110,85 @@ export class ServiceCollection {
    * same as `new ServiceCollection()`
    */
   static get EMPTY() {
-    return new ServiceCollection();
+    return new Framework();
   }
 
   /**
    * The number of services in the collection.
    */
-  get size() {
-    let size = 0;
-    for (const [, identifiers] of this.services) {
+  get componentCount() {
+    let count = 0;
+    for (const [, identifiers] of this.components) {
       for (const [, variants] of identifiers) {
-        size += variants.size;
+        count += variants.size;
       }
     }
-    return size;
+    return count;
   }
 
   /**
-   * @see {@link ServiceCollectionEditor.add}
+   * @see {@link FrameworkEditor.service}
    */
-  get add() {
-    return new ServiceCollectionEditor(this).add;
+  get service() {
+    return new FrameworkEditor(this).service;
   }
 
   /**
-   * @see {@link ServiceCollectionEditor.addImpl}
+   * @see {@link FrameworkEditor.impl}
    */
-  get addImpl() {
-    return new ServiceCollectionEditor(this).addImpl;
+  get impl() {
+    return new FrameworkEditor(this).impl;
   }
 
   /**
-   * @see {@link ServiceCollectionEditor.scope}
+   * @see {@link FrameworkEditor.scope}
    */
   get scope() {
-    return new ServiceCollectionEditor(this).scope;
+    return new FrameworkEditor(this).scope;
   }
 
   /**
-   * @see {@link ServiceCollectionEditor.scope}
+   * @see {@link FrameworkEditor.scope}
    */
   get override() {
-    return new ServiceCollectionEditor(this).override;
+    return new FrameworkEditor(this).override;
   }
 
   /**
-   * @internal Use {@link addImpl} instead.
+   * @internal Use {@link impl} instead.
    */
   addValue<T>(
     identifier: GeneralServiceIdentifier<T>,
     value: T,
-    { scope, override }: { scope?: ServiceScope; override?: boolean } = {}
+    { scope, override }: { scope?: FrameworkLayer; override?: boolean } = {}
   ) {
-    this.addFactory(
-      parseIdentifier(identifier) as ServiceIdentifier<T>,
-      () => value,
-      {
-        scope,
-        override,
-      }
-    );
+    this.addFactory(parseIdentifier(identifier) as Identifier<T>, () => value, {
+      scope,
+      override,
+    });
   }
 
   /**
-   * @internal Use {@link addImpl} instead.
+   * @internal Use {@link impl} instead.
    */
   addFactory<T>(
     identifier: GeneralServiceIdentifier<T>,
-    factory: ServiceFactory<T>,
-    { scope, override }: { scope?: ServiceScope; override?: boolean } = {}
+    factory: ComponentFactory<T>,
+    { scope, override }: { scope?: FrameworkLayer; override?: boolean } = {}
   ) {
     // convert scope to string
-    const normalizedScope = stringifyScope(scope ?? ROOT_SCOPE);
+    const normalizedScope = stringifyLayer(scope ?? ROOT_SCOPE);
     const normalizedIdentifier = parseIdentifier(identifier);
     const normalizedVariant =
       normalizedIdentifier.variant ?? DEFAULT_SERVICE_VARIANT;
 
     const services =
-      this.services.get(normalizedScope) ??
-      new Map<string, Map<ServiceVariant, ServiceFactory>>();
+      this.components.get(normalizedScope) ??
+      new Map<string, Map<ComponentVariant, ComponentFactory>>();
 
     const variants =
       services.get(normalizedIdentifier.identifierName) ??
-      new Map<ServiceVariant, ServiceFactory>();
+      new Map<ComponentVariant, ComponentFactory>();
 
     // throw if service already exists, unless it is an override
     if (variants.has(normalizedVariant) && !override) {
@@ -200,16 +196,16 @@ export class ServiceCollection {
     }
     variants.set(normalizedVariant, factory);
     services.set(normalizedIdentifier.identifierName, variants);
-    this.services.set(normalizedScope, services);
+    this.components.set(normalizedScope, services);
   }
 
-  remove(identifier: ServiceIdentifierValue, scope: ServiceScope = ROOT_SCOPE) {
-    const normalizedScope = stringifyScope(scope);
+  remove(identifier: IdentifierValue, scope: FrameworkLayer = ROOT_SCOPE) {
+    const normalizedScope = stringifyLayer(scope);
     const normalizedIdentifier = parseIdentifier(identifier);
     const normalizedVariant =
       normalizedIdentifier.variant ?? DEFAULT_SERVICE_VARIANT;
 
-    const services = this.services.get(normalizedScope);
+    const services = this.components.get(normalizedScope);
     if (!services) {
       return;
     }
@@ -235,9 +231,9 @@ export class ServiceCollection {
    * @param parent The parent service provider, it is required if the scope is not the root scope.
    */
   provider(
-    scope: ServiceScope = ROOT_SCOPE,
-    parent: ServiceProvider | null = null
-  ): ServiceProvider {
+    scope: FrameworkLayer = ROOT_SCOPE,
+    parent: FrameworkProvider | null = null
+  ): FrameworkProvider {
     return new BasicServiceProvider(this, scope, parent);
   }
 
@@ -245,11 +241,11 @@ export class ServiceCollection {
    * @internal
    */
   getFactory(
-    identifier: ServiceIdentifierValue,
-    scope: ServiceScope = ROOT_SCOPE
-  ): ServiceFactory | undefined {
-    return this.services
-      .get(stringifyScope(scope))
+    identifier: IdentifierValue,
+    scope: FrameworkLayer = ROOT_SCOPE
+  ): ComponentFactory | undefined {
+    return this.components
+      .get(stringifyLayer(scope))
       ?.get(identifier.identifierName)
       ?.get(identifier.variant ?? DEFAULT_SERVICE_VARIANT);
   }
@@ -258,11 +254,11 @@ export class ServiceCollection {
    * @internal
    */
   getFactoryAll(
-    identifier: ServiceIdentifierValue,
-    scope: ServiceScope = ROOT_SCOPE
-  ): Map<ServiceVariant, ServiceFactory> {
+    identifier: IdentifierValue,
+    scope: FrameworkLayer = ROOT_SCOPE
+  ): Map<ComponentVariant, ComponentFactory> {
     return new Map(
-      this.services.get(stringifyScope(scope))?.get(identifier.identifierName)
+      this.components.get(stringifyLayer(scope))?.get(identifier.identifierName)
     );
   }
 
@@ -273,14 +269,14 @@ export class ServiceCollection {
    *
    * @returns A new service collection with the same services.
    */
-  clone(): ServiceCollection {
-    const di = new ServiceCollection();
-    for (const [scope, identifiers] of this.services) {
+  clone(): Framework {
+    const di = new Framework();
+    for (const [scope, identifiers] of this.components) {
       const s = new Map();
       for (const [identifier, variants] of identifiers) {
         s.set(identifier, new Map(variants));
       }
-      di.services.set(scope, s);
+      di.components.set(scope, s);
     }
     return di;
   }
@@ -289,22 +285,22 @@ export class ServiceCollection {
 /**
  * A helper class to edit a service collection.
  */
-class ServiceCollectionEditor {
-  private currentScope: ServiceScope = ROOT_SCOPE;
+class FrameworkEditor {
+  private currentScope: FrameworkLayer = ROOT_SCOPE;
 
-  constructor(private readonly collection: ServiceCollection) {}
+  constructor(private readonly collection: Framework) {}
 
   /**
    * Add a service to the collection.
    *
-   * @see {@link ServiceCollection}
+   * @see {@link Framework}
    *
    * @example
    * ```ts
    * add(ServiceClass, [dependencies, ...])
    * ```
    */
-  add = <
+  service = <
     T extends new (...args: any) => any,
     const Deps extends TypesToDeps<ConstructorParameters<T>> = TypesToDeps<
       ConstructorParameters<T>
@@ -325,7 +321,7 @@ class ServiceCollectionEditor {
   /**
    * Add an implementation for identifier to the collection.
    *
-   * @see {@link ServiceCollection}
+   * @see {@link Framework}
    *
    * @example
    * ```ts
@@ -336,10 +332,10 @@ class ServiceCollectionEditor {
    * addImpl(ServiceIdentifier, Factory)
    * ```
    */
-  addImpl = <
-    Arg1 extends ServiceIdentifier<any> | (new (...args: any) => any),
-    Arg2 extends Type<Trait> | ServiceFactory<Trait> | Trait,
-    Trait = ServiceIdentifierType<Arg1>,
+  impl = <
+    Arg1 extends Identifier<any> | (new (...args: any) => any),
+    Arg2 extends Type<Trait> | ComponentFactory<Trait> | Trait,
+    Trait = IdentifierType<Arg1>,
     Deps extends Arg2 extends Type<Trait>
       ? TypesToDeps<ConstructorParameters<Arg2>>
       : [] = Arg2 extends Type<Trait>
@@ -367,9 +363,9 @@ class ServiceCollectionEditor {
   };
 
   /**
-   * same as {@link addImpl} but this method will override the service if it exists.
+   * same as {@link impl} but this method will override the service if it exists.
    *
-   * @see {@link ServiceCollection}
+   * @see {@link Framework}
    *
    * @example
    * ```ts
@@ -383,9 +379,9 @@ class ServiceCollectionEditor {
    * ```
    */
   override = <
-    Arg1 extends ServiceIdentifier<any>,
-    Arg2 extends Type<Trait> | ServiceFactory<Trait> | Trait | null,
-    Trait = ServiceIdentifierType<Arg1>,
+    Arg1 extends Identifier<any>,
+    Arg2 extends Type<Trait> | ComponentFactory<Trait> | Trait | null,
+    Trait = IdentifierType<Arg1>,
     Deps extends Arg2 extends Type<Trait>
       ? TypesToDeps<ConstructorParameters<Arg2>>
       : [] = Arg2 extends Type<Trait>
@@ -427,7 +423,7 @@ class ServiceCollectionEditor {
    * services.scope(ScopeA).add(XXXService, ...);
    * ```
    */
-  scope = (scope: ServiceScope): ServiceCollectionEditor => {
+  scope = (scope: FrameworkLayer): FrameworkEditor => {
     this.currentScope = scope;
     return this;
   };
@@ -439,8 +435,8 @@ class ServiceCollectionEditor {
 function dependenciesToFactory(
   cls: any,
   deps: any[] = []
-): ServiceFactory<any> {
-  return (provider: ServiceProvider) => {
+): ComponentFactory<any> {
+  return (provider: FrameworkProvider) => {
     const args = [];
     for (const dep of deps) {
       let isAll;

@@ -1,4 +1,4 @@
-import type { ServiceProvider } from '@toeverything/infra';
+import type { FrameworkProvider } from '@toeverything/infra';
 import {
   ServiceProviderContext,
   useLiveData,
@@ -9,7 +9,7 @@ import type React from 'react';
 import { CurrentWorkspaceService } from '../../workspace';
 
 export const GlobalScopeProvider: React.FC<
-  React.PropsWithChildren<{ provider: ServiceProvider }>
+  React.PropsWithChildren<{ provider: FrameworkProvider }>
 > = ({ provider: rootProvider, children }) => {
   const currentWorkspaceService = useService(CurrentWorkspaceService, {
     provider: rootProvider,

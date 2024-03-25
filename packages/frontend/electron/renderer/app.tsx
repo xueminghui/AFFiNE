@@ -17,7 +17,7 @@ import createEmotionCache from '@affine/core/utils/create-emotion-cache';
 import { configureWebServices } from '@affine/core/web';
 import { createI18n, setUpLanguage } from '@affine/i18n';
 import { CacheProvider } from '@emotion/react';
-import { getCurrentStore, ServiceCollection } from '@toeverything/infra';
+import { Framework,getCurrentStore } from '@toeverything/infra';
 import type { PropsWithChildren, ReactElement } from 'react';
 import { lazy, Suspense } from 'react';
 import { RouterProvider } from 'react-router-dom';
@@ -55,7 +55,7 @@ async function loadLanguage() {
 
 let languageLoadingPromise: Promise<void> | null = null;
 
-const services = new ServiceCollection();
+const services = new Framework();
 configureWebServices(services);
 const serviceProvider = services.provider();
 

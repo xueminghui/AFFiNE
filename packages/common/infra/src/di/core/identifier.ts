@@ -1,9 +1,9 @@
 import { stableHash } from '../../utils/stable-hash';
 import { DEFAULT_SERVICE_VARIANT } from './consts';
 import type {
-  ServiceIdentifier,
-  ServiceIdentifierValue,
-  ServiceVariant,
+  ComponentVariant,
+  Identifier,
+  IdentifierValue,
   Type,
 } from './types';
 
@@ -77,10 +77,10 @@ import type {
  */
 export function createIdentifier<T>(
   name: string,
-  variant: ServiceVariant = DEFAULT_SERVICE_VARIANT
-): ServiceIdentifier<T> & ((variant: ServiceVariant) => ServiceIdentifier<T>) {
+  variant: ComponentVariant = DEFAULT_SERVICE_VARIANT
+): Identifier<T> & ((variant: ComponentVariant) => Identifier<T>) {
   return Object.assign(
-    (variant: ServiceVariant) => {
+    (variant: ComponentVariant) => {
       return createIdentifier<T>(name, variant);
     },
     {
@@ -98,13 +98,13 @@ export function createIdentifier<T>(
  */
 export function createIdentifierFromConstructor<T>(
   target: Type<T>
-): ServiceIdentifier<T> {
+): Identifier<T> {
   return createIdentifier<T>(`${target.name}${stableHash(target)}`);
 }
 
-export function parseIdentifier(input: any): ServiceIdentifierValue {
+export function parseIdentifier(input: any): IdentifierValue {
   if (input.identifierName) {
-    return input as ServiceIdentifierValue;
+    return input as IdentifierValue;
   } else if (typeof input === 'function' && input.name) {
     return createIdentifierFromConstructor(input);
   } else {

@@ -1,4 +1,4 @@
-import type { ServiceCollection, WorkspaceFactory } from '@toeverything/infra';
+import type { Framework, WorkspaceFactory } from '@toeverything/infra';
 import {
   AwarenessContext,
   AwarenessProvider,
@@ -18,23 +18,23 @@ import { SqliteDocStorage } from './doc-sqlite';
 
 export class LocalWorkspaceFactory implements WorkspaceFactory {
   name = 'local';
-  configureWorkspace(services: ServiceCollection): void {
+  configureWorkspace(services: Framework): void {
     if (environment.isDesktop) {
       services
         .scope(WorkspaceScope)
-        .addImpl(LocalBlobStorage, SQLiteBlobStorage, [WorkspaceIdContext])
-        .addImpl(DocStorageImpl, SqliteDocStorage, [WorkspaceIdContext]);
+        .impl(LocalBlobStorage, SQLiteBlobStorage, [WorkspaceIdContext])
+        .impl(DocStorageImpl, SqliteDocStorage, [WorkspaceIdContext]);
     } else {
       services
         .scope(WorkspaceScope)
-        .addImpl(LocalBlobStorage, IndexedDBBlobStorage, [WorkspaceIdContext])
-        .addImpl(DocStorageImpl, IndexedDBDocStorage, [WorkspaceIdContext]);
+        .impl(LocalBlobStorage, IndexedDBBlobStorage, [WorkspaceIdContext])
+        .impl(DocStorageImpl, IndexedDBDocStorage, [WorkspaceIdContext]);
     }
 
     services
       .scope(WorkspaceScope)
-      .addImpl(RemoteBlobStorage('static'), StaticBlobStorage)
-      .addImpl(
+      .impl(RemoteBlobStorage('static'), StaticBlobStorage)
+      .impl(
         AwarenessProvider('broadcast-channel'),
         BroadcastChannelAwarenessProvider,
         [WorkspaceIdContext, AwarenessContext]

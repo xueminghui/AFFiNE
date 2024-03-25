@@ -14,7 +14,7 @@ import { setupGlobal, type Environment } from '@affine/env/global';
 import type { Preview } from '@storybook/react';
 import { useLayoutEffect, useRef } from 'react';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { ServiceCollection } from '@toeverything/infra';
+import { Framework } from '@toeverything/infra';
 import {
   WorkspaceManager,
   configureInfraServices,
@@ -71,7 +71,7 @@ window.localStorage.setItem(
   '{"onBoarding":false, "dismissWorkspaceGuideModal":true}'
 );
 
-const services = new ServiceCollection();
+const services = new Framework();
 
 configureInfraServices(services);
 configureTestingInfraServices(services);

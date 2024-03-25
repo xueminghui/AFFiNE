@@ -6,7 +6,7 @@ import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
 import { setupEditorFlags } from '../atom/settings';
 import { fixWorkspaceVersion } from '../blocksuite';
-import type { ServiceCollection, ServiceProvider } from '../di';
+import type { Framework, FrameworkProvider } from '../di';
 import { ObjectPool } from '../utils/object-pool';
 import { configureWorkspaceContext } from './context';
 import type { BlobStorage } from './engine';
@@ -67,7 +67,7 @@ export class WorkspaceManager {
   constructor(
     public readonly list: WorkspaceListService,
     public readonly factories: WorkspaceFactory[],
-    private readonly serviceProvider: ServiceProvider
+    private readonly serviceProvider: FrameworkProvider
   ) {}
 
   /**
@@ -170,7 +170,7 @@ export class WorkspaceManager {
 
   instantiate(
     metadata: WorkspaceMetadata,
-    configureWorkspace?: (serviceCollection: ServiceCollection) => void
+    configureWorkspace?: (serviceCollection: Framework) => void
   ) {
     logger.info(`open workspace [${metadata.flavour}] ${metadata.id} `);
     const serviceCollection = this.serviceProvider.collection.clone();

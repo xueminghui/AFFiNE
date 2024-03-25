@@ -4,8 +4,8 @@ export * from './record';
 export * from './record-list';
 export * from './service-scope';
 
-import type { ServiceCollection } from '../di';
-import { ServiceProvider } from '../di';
+import type { Framework } from '../di';
+import { FrameworkProvider } from '../di';
 import { CleanupService } from '../lifecycle';
 import { Workspace, WorkspaceLocalState, WorkspaceScope } from '../workspace';
 import { BlockSuitePageContext, PageRecordContext } from './context';
@@ -14,14 +14,18 @@ import { Doc } from './page';
 import { PageRecordList } from './record-list';
 import { PageScope } from './service-scope';
 
-export function configurePageServices(services: ServiceCollection) {
+export function configurePageServices(services: Framework) {
   services
     .scope(WorkspaceScope)
-    .add(PageManager, [Workspace, PageRecordList, ServiceProvider])
-    .add(PageRecordList, [Workspace, WorkspaceLocalState]);
+    .service(PageManager, [Workspace, PageRecordList, FrameworkProvider])
+    .service(PageRecordList, [Workspace, WorkspaceLocalState]);
 
   services
     .scope(PageScope)
-    .add(CleanupService)
-    .add(Doc, [PageRecordContext, BlockSuitePageContext, ServiceProvider]);
+    .service(CleanupService)
+    .service(Doc, [
+      PageRecordContext,
+      BlockSuitePageContext,
+      FrameworkProvider,
+    ]);
 }

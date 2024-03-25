@@ -145,12 +145,12 @@ export const Component = () => {
       services => {
         services
           .scope(WorkspaceScope)
-          .addImpl(LocalBlobStorage, EmptyBlobStorage)
-          .addImpl(RemoteBlobStorage('affine'), AffineCloudBlobStorage, [
+          .impl(LocalBlobStorage, EmptyBlobStorage)
+          .impl(RemoteBlobStorage('affine'), AffineCloudBlobStorage, [
             WorkspaceIdContext,
           ])
-          .addImpl(RemoteBlobStorage('static'), StaticBlobStorage)
-          .addImpl(
+          .impl(RemoteBlobStorage('static'), StaticBlobStorage)
+          .impl(
             DocStorageImpl,
             new ReadonlyDocStorage({
               [workspaceId]: new Uint8Array(workspaceArrayBuffer),

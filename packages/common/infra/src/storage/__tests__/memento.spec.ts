@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
-import { ServiceCollection } from '../../di';
+import { Framework } from '../../di';
 import { GlobalCache, GlobalState, MemoryMemento } from '..';
 
 describe('memento', () => {
@@ -25,11 +25,9 @@ describe('memento', () => {
   });
 
   test('service', () => {
-    const services = new ServiceCollection();
+    const services = new Framework();
 
-    services
-      .addImpl(GlobalCache, MemoryMemento)
-      .addImpl(GlobalState, MemoryMemento);
+    services.impl(GlobalCache, MemoryMemento).impl(GlobalState, MemoryMemento);
 
     const provider = services.provider();
     const cache = provider.get(GlobalCache);

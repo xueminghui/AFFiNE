@@ -1,5 +1,5 @@
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import type { ServiceCollection, WorkspaceFactory } from '@toeverything/infra';
+import type { Framework, WorkspaceFactory } from '@toeverything/infra';
 import {
   AwarenessContext,
   AwarenessProvider,
@@ -18,21 +18,20 @@ import { AffineCloudDocEngineServer } from './doc';
 
 export class CloudWorkspaceFactory implements WorkspaceFactory {
   name = WorkspaceFlavour.AFFINE_CLOUD;
-  configureWorkspace(services: ServiceCollection): void {
+  configureWorkspace(services: Framework): void {
     // configure local-first providers
     new LocalWorkspaceFactory().configureWorkspace(services);
 
     services
       .scope(WorkspaceScope)
-      .addImpl(RemoteBlobStorage('affine-cloud'), AffineCloudBlobStorage, [
+      .impl(RemoteBlobStorage('affine-cloud'), AffineCloudBlobStorage, [
         WorkspaceIdContext,
       ])
-      .addImpl(DocServerImpl, AffineCloudDocEngineServer, [WorkspaceIdContext])
-      .addImpl(
-        AwarenessProvider('affine-cloud'),
-        AffineCloudAwarenessProvider,
-        [WorkspaceIdContext, AwarenessContext]
-      );
+      .impl(DocServerImpl, AffineCloudDocEngineServer, [WorkspaceIdContext])
+      .impl(AwarenessProvider('affine-cloud'), AffineCloudAwarenessProvider, [
+        WorkspaceIdContext,
+        AwarenessContext,
+      ]);
   }
   async getWorkspaceBlob(id: string, blobKey: string): Promise<Blob | null> {
     // try to get blob from local storage first

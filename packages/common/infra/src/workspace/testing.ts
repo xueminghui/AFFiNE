@@ -4,7 +4,7 @@ import { differenceBy } from 'lodash-es';
 import { nanoid } from 'nanoid';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
-import type { ServiceCollection } from '../di';
+import type { Framework } from '../di';
 import type { Memento } from '../storage';
 import { GlobalState } from '../storage';
 import { WorkspaceMetadataContext } from './context';
@@ -129,15 +129,15 @@ export class TestingLocalWorkspaceFactory implements WorkspaceFactory {
 
   name = WorkspaceFlavour.LOCAL;
 
-  configureWorkspace(services: ServiceCollection): void {
+  configureWorkspace(services: Framework): void {
     services
       .scope(WorkspaceScope)
-      .addImpl(LocalBlobStorage, TestingBlobStorage, [
+      .impl(LocalBlobStorage, TestingBlobStorage, [
         WorkspaceMetadataContext,
         GlobalState,
       ])
-      .addImpl(DocStorageImpl, MemoryStorage, [GlobalState])
-      .addImpl(AwarenessProvider, TestingAwarenessProvider);
+      .impl(DocStorageImpl, MemoryStorage, [GlobalState])
+      .impl(AwarenessProvider, TestingAwarenessProvider);
   }
 
   getWorkspaceBlob(id: string, blobKey: string): Promise<Blob | null> {

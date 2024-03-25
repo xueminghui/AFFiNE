@@ -2,12 +2,12 @@ import { WorkspaceFlavour } from '@affine/env/workspace';
 import { describe, expect, test } from 'vitest';
 
 import { configureInfraServices, configureTestingInfraServices } from '../..';
-import { ServiceCollection } from '../../di';
+import { Framework } from '../../di';
 import { WorkspaceListService, WorkspaceManager } from '../';
 
 describe('Workspace System', () => {
   test('create workspace', async () => {
-    const services = new ServiceCollection();
+    const services = new Framework();
     configureInfraServices(services);
     configureTestingInfraServices(services);
 
