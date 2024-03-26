@@ -1,3 +1,4 @@
+import { stableHash } from '../../utils';
 import type { Framework } from './collection';
 import type { Entity } from './components/entity';
 import type { LayerRoot } from './components/layer-root';
@@ -11,6 +12,7 @@ import {
 import { parseIdentifier } from './identifier';
 import type {
   ComponentVariant,
+  FrameworkLayer,
   GeneralIdentifier,
   IdentifierValue,
 } from './types';
@@ -23,6 +25,7 @@ export interface ResolveOptions {
 
 export abstract class FrameworkProvider {
   abstract collection: Framework;
+  abstract scope: FrameworkLayer;
   abstract getRaw(identifier: IdentifierValue, options?: ResolveOptions): any;
   abstract getAllRaw(
     identifier: IdentifierValue,
@@ -78,10 +81,13 @@ export abstract class FrameworkProvider {
     id: string,
     ...[props]: Props extends undefined ? [] : [Props]
   ): T {
-    const newProvider = this.collection.provider([...])
+    const newProvider = this.collection.provider([
+      ...this.scope,
+      stableHash(root),
+    ]);
     return withContext(
       () =>
-        this.getRaw(parseIdentifier(root), {
+        newProvider.getRaw(parseIdentifier(root), {
           noCache: true,
           sameScope: true,
         }),
@@ -116,6 +122,7 @@ class Resolver extends FrameworkProvider {
     super();
   }
 
+  scope = this.provider.scope;
   collection = this.provider.collection;
 
   getRaw(
