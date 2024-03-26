@@ -163,7 +163,9 @@ export const Component = () => {
     workspace.engine
       .waitForRootDocReady()
       .then(() => {
-        const { page } = workspace.services.get(PageManager).open(pageId);
+        const { page } = workspace.services
+          .getService(PageManager)
+          .open(pageId);
 
         workspace.docCollection.awarenessStore.setReadonly(
           page.blockSuiteDoc,

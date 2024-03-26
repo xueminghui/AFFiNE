@@ -1,4 +1,5 @@
 import { stableHash } from '../../utils/stable-hash';
+import type { Component } from './components/component';
 import { DEFAULT_SERVICE_VARIANT } from './consts';
 import type {
   ComponentVariant,
@@ -96,7 +97,7 @@ export function createIdentifier<T>(
  *
  * @internal
  */
-export function createIdentifierFromConstructor<T>(
+export function createIdentifierFromConstructor<T extends Component>(
   target: Type<T>
 ): Identifier<T> {
   return createIdentifier<T>(`${target.name}${stableHash(target)}`);

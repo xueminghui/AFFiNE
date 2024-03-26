@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 
-import type { FrameworkProvider,GeneralServiceIdentifier } from '../core';
+import type { FrameworkProvider, GeneralIdentifier } from '../core';
 import { Framework } from '../core';
 
 export const ServiceProviderContext = React.createContext(
@@ -8,7 +8,7 @@ export const ServiceProviderContext = React.createContext(
 );
 
 export function useService<T>(
-  identifier: GeneralServiceIdentifier<T>,
+  identifier: GeneralIdentifier<T>,
   { provider }: { provider?: FrameworkProvider } = {}
 ): T {
   const contextServiceProvider = useContext(ServiceProviderContext);
@@ -19,7 +19,7 @@ export function useService<T>(
 }
 
 export function useServiceOptional<T>(
-  identifier: GeneralServiceIdentifier<T>,
+  identifier: GeneralIdentifier<T>,
   { provider }: { provider?: FrameworkProvider } = {}
 ): T | null {
   const contextServiceProvider = useContext(ServiceProviderContext);

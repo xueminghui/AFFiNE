@@ -1,3 +1,6 @@
+import type { Component } from './components/component';
+import type { Entity } from './components/entity';
+import type { Service } from './components/service';
 import { DEFAULT_SERVICE_VARIANT, ROOT_SCOPE } from './consts';
 import { DuplicateServiceDefinitionError } from './error';
 import { parseIdentifier } from './identifier';
@@ -8,7 +11,7 @@ import type {
   ComponentFactory,
   ComponentVariant,
   FrameworkLayer,
-  GeneralServiceIdentifier,
+  GeneralIdentifier,
   Identifier,
   IdentifierType,
   IdentifierValue,
@@ -141,14 +144,21 @@ export class Framework {
   }
 
   /**
-   * @see {@link FrameworkEditor.scope}
+   * @see {@link FrameworkEditor.entity}
    */
-  get scope() {
-    return new FrameworkEditor(this).scope;
+  get entity() {
+    return new FrameworkEditor(this).entity;
   }
 
   /**
-   * @see {@link FrameworkEditor.scope}
+   * @see {@link FrameworkEditor.layer}
+   */
+  get layer() {
+    return new FrameworkEditor(this).layer;
+  }
+
+  /**
+   * @see {@link FrameworkEditor.override}
    */
   get override() {
     return new FrameworkEditor(this).override;
@@ -158,7 +168,7 @@ export class Framework {
    * @internal Use {@link impl} instead.
    */
   addValue<T>(
-    identifier: GeneralServiceIdentifier<T>,
+    identifier: GeneralIdentifier<T>,
     value: T,
     { scope, override }: { scope?: FrameworkLayer; override?: boolean } = {}
   ) {
@@ -172,7 +182,7 @@ export class Framework {
    * @internal Use {@link impl} instead.
    */
   addFactory<T>(
-    identifier: GeneralServiceIdentifier<T>,
+    identifier: GeneralIdentifier<T>,
     factory: ComponentFactory<T>,
     { scope, override }: { scope?: FrameworkLayer; override?: boolean } = {}
   ) {
@@ -301,19 +311,57 @@ class FrameworkEditor {
    * ```
    */
   service = <
-    T extends new (...args: any) => any,
-    const Deps extends TypesToDeps<ConstructorParameters<T>> = TypesToDeps<
-      ConstructorParameters<T>
-    >,
+    Arg1 extends GeneralIdentifier<Service>,
+    Arg2 extends Deps | ComponentFactory<ServiceType> | ServiceType,
+    ServiceType = IdentifierType<Arg1>,
+    Deps = Arg1 extends Type<ServiceType>
+      ? TypesToDeps<ConstructorParameters<Arg1>>
+      : [],
   >(
-    cls: T,
-    ...[deps]: Deps extends [] ? [] : [Deps]
+    service: Arg1,
+    ...[arg2]: Arg2 extends [] ? [] : [Arg2]
   ): this => {
-    this.collection.addFactory<any>(
-      cls as any,
-      dependenciesToFactory(cls, deps as any),
-      { scope: this.currentScope }
-    );
+    if (arg2 instanceof Function) {
+      this.collection.addFactory<any>(service as any, arg2 as any, {
+        scope: this.currentScope,
+      });
+    } else if (arg2 instanceof Array || arg2 === undefined) {
+      this.collection.addFactory<any>(
+        service as any,
+        dependenciesToFactory(service, arg2 as any),
+        { scope: this.currentScope }
+      );
+    } else {
+      this.collection.addValue<any>(service as any, arg2, {
+        scope: this.currentScope,
+      });
+    }
+
+    return this;
+  };
+
+  entity = <
+    Arg1 extends GeneralIdentifier<Entity>,
+    Arg2 extends Deps | ComponentFactory<EntityType>,
+    EntityType = IdentifierType<Arg1>,
+    Deps = Arg1 extends Type<EntityType>
+      ? TypesToDeps<ConstructorParameters<Arg1>>
+      : [],
+  >(
+    entity: Arg1,
+    ...[arg2]: Arg2 extends [] ? [] : [Arg2]
+  ): this => {
+    if (arg2 instanceof Function) {
+      this.collection.addFactory<any>(entity as any, arg2 as any, {
+        scope: this.currentScope,
+      });
+    } else {
+      this.collection.addFactory<any>(
+        entity as any,
+        dependenciesToFactory(entity, arg2 as any),
+        { scope: this.currentScope }
+      );
+    }
 
     return this;
   };
@@ -333,15 +381,13 @@ class FrameworkEditor {
    * ```
    */
   impl = <
-    Arg1 extends Identifier<any> | (new (...args: any) => any),
+    Arg1 extends GeneralIdentifier<any>,
     Arg2 extends Type<Trait> | ComponentFactory<Trait> | Trait,
+    Arg3 extends Deps,
     Trait = IdentifierType<Arg1>,
-    Deps extends Arg2 extends Type<Trait>
-      ? TypesToDeps<ConstructorParameters<Arg2>>
-      : [] = Arg2 extends Type<Trait>
+    Deps = Arg2 extends Type<Trait>
       ? TypesToDeps<ConstructorParameters<Arg2>>
       : [],
-    Arg3 extends Deps = Deps,
   >(
     identifier: Arg1,
     arg2: Arg2,
@@ -379,22 +425,20 @@ class FrameworkEditor {
    * ```
    */
   override = <
-    Arg1 extends Identifier<any>,
+    Arg1 extends GeneralIdentifier<any>,
     Arg2 extends Type<Trait> | ComponentFactory<Trait> | Trait | null,
-    Trait = IdentifierType<Arg1>,
-    Deps extends Arg2 extends Type<Trait>
-      ? TypesToDeps<ConstructorParameters<Arg2>>
-      : [] = Arg2 extends Type<Trait>
+    Arg3 extends Deps,
+    Trait extends Component = IdentifierType<Arg1>,
+    Deps = Arg2 extends Type<Trait>
       ? TypesToDeps<ConstructorParameters<Arg2>>
       : [],
-    Arg3 extends Deps = Deps,
   >(
     identifier: Arg1,
     arg2: Arg2,
     ...[arg3]: Arg3 extends [] ? [] : [Arg3]
   ): this => {
     if (arg2 === null) {
-      this.collection.remove(identifier, this.currentScope);
+      this.collection.remove(parseIdentifier(identifier), this.currentScope);
       return this;
     } else if (arg2 instanceof Function) {
       this.collection.addFactory<any>(
@@ -423,8 +467,30 @@ class FrameworkEditor {
    * services.scope(ScopeA).add(XXXService, ...);
    * ```
    */
-  scope = (scope: FrameworkLayer): FrameworkEditor => {
-    this.currentScope = scope;
+  layer = <
+    Arg1 extends GeneralIdentifier<Entity> & { layer: string },
+    Arg2 extends Deps | ComponentFactory<EntityType>,
+    EntityType = IdentifierType<Arg1>,
+    Deps = Arg1 extends Type<EntityType>
+      ? TypesToDeps<ConstructorParameters<Arg1>>
+      : [],
+  >(
+    root: Arg1,
+    ...[arg2]: Arg2 extends [] ? [] : [Arg2]
+  ): this => {
+    this.currentScope = [...this.currentScope, root.layer];
+    if (arg2 instanceof Function) {
+      this.collection.addFactory<any>(root as any, arg2 as any, {
+        scope: this.currentScope,
+      });
+    } else {
+      this.collection.addFactory<any>(
+        root as any,
+        dependenciesToFactory(root, arg2 as any),
+        { scope: this.currentScope }
+      );
+    }
+
     return this;
   };
 }

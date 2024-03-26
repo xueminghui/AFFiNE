@@ -1,12 +1,12 @@
-import { CONSTRUCTOR_CONTEXT } from '../constructor-context';
+import { CONSTRUCTOR_CONTEXT } from '../context';
 import type { FrameworkProvider } from '../provider';
 
 export class Component {
-  framework: FrameworkProvider;
+  readonly framework: FrameworkProvider;
   constructor() {
-    if (CONSTRUCTOR_CONTEXT.current === null) {
+    if (!CONSTRUCTOR_CONTEXT.current.provider) {
       throw new Error('Component must be created in the context of a provider');
     }
-    this.framework = CONSTRUCTOR_CONTEXT.current;
+    this.framework = CONSTRUCTOR_CONTEXT.current.provider;
   }
 }

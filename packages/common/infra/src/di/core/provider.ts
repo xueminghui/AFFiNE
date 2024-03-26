@@ -1,4 +1,6 @@
 import type { Framework } from './collection';
+import type { Entity } from './components/entity';
+import { withContext } from './context';
 import {
   CircularDependencyError,
   MissingDependencyError,
@@ -8,13 +10,14 @@ import {
 import { parseIdentifier } from './identifier';
 import type {
   ComponentVariant,
-  GeneralServiceIdentifier,
+  GeneralIdentifier,
   IdentifierValue,
 } from './types';
 
 export interface ResolveOptions {
   sameScope?: boolean;
   optional?: boolean;
+  noCache?: boolean;
 }
 
 export abstract class FrameworkProvider {
@@ -25,7 +28,7 @@ export abstract class FrameworkProvider {
     options?: ResolveOptions
   ): Map<ComponentVariant, any>;
 
-  get<T>(identifier: GeneralServiceIdentifier<T>, options?: ResolveOptions): T {
+  get<T>(identifier: GeneralIdentifier<T>, options?: ResolveOptions): T {
     return this.getRaw(parseIdentifier(identifier), {
       ...options,
       optional: false,
@@ -33,7 +36,7 @@ export abstract class FrameworkProvider {
   }
 
   getAll<T>(
-    identifier: GeneralServiceIdentifier<T>,
+    identifier: GeneralIdentifier<T>,
     options?: ResolveOptions
   ): Map<ComponentVariant, T> {
     return this.getAllRaw(parseIdentifier(identifier), {
@@ -42,7 +45,7 @@ export abstract class FrameworkProvider {
   }
 
   getOptional<T>(
-    identifier: GeneralServiceIdentifier<T>,
+    identifier: GeneralIdentifier<T>,
     options?: ResolveOptions
   ): T | null {
     return this.getRaw(parseIdentifier(identifier), {
@@ -50,9 +53,27 @@ export abstract class FrameworkProvider {
       optional: true,
     });
   }
+
+  createEntity<T extends Entity, Props = T extends Entity<infer P> ? P : never>(
+    identifier: GeneralIdentifier<T>,
+    id: string,
+    ...[props]: Props extends undefined ? [] : [Props]
+  ): T {
+    return withContext(
+      () =>
+        this.getRaw(parseIdentifier(identifier), {
+          noCache: true,
+          sameScope: true,
+        }),
+      {
+        entityId: id,
+        entityProps: props,
+      }
+    );
+  }
 }
 
-export class ServiceCachePool {
+export class ComponentCachePool {
   cache: Map<string, Map<ComponentVariant, any>> = new Map();
 
   getOrInsert(identifier: IdentifierValue, insert: () => any) {
@@ -66,7 +87,7 @@ export class ServiceCachePool {
   }
 }
 
-export class ServiceResolver extends FrameworkProvider {
+class Resolver extends FrameworkProvider {
   constructor(
     public readonly provider: BasicServiceProvider,
     public readonly depth = 0,
@@ -79,7 +100,11 @@ export class ServiceResolver extends FrameworkProvider {
 
   getRaw(
     identifier: IdentifierValue,
-    { sameScope = false, optional = false }: ResolveOptions = {}
+    {
+      sameScope = false,
+      optional = false,
+      noCache = false,
+    }: ResolveOptions = {}
   ) {
     const factory = this.provider.collection.getFactory(
       identifier,
@@ -90,6 +115,7 @@ export class ServiceResolver extends FrameworkProvider {
         return this.provider.parent.getRaw(identifier, {
           sameScope,
           optional,
+          noCache,
         });
       }
 
@@ -99,10 +125,12 @@ export class ServiceResolver extends FrameworkProvider {
       throw new ServiceNotFoundError(identifier);
     }
 
-    return this.provider.cache.getOrInsert(identifier, () => {
+    const runFactory = () => {
       const nextResolver = this.track(identifier);
       try {
-        return factory(nextResolver);
+        return withContext(() => factory(nextResolver), {
+          provider: this.provider,
+        });
       } catch (err) {
         if (err instanceof ServiceNotFoundError) {
           throw new MissingDependencyError(
@@ -113,12 +141,18 @@ export class ServiceResolver extends FrameworkProvider {
         }
         throw err;
       }
-    });
+    };
+
+    if (noCache) {
+      return runFactory();
+    }
+
+    return this.provider.cache.getOrInsert(identifier, runFactory);
   }
 
   getAllRaw(
     identifier: IdentifierValue,
-    { sameScope = false }: ResolveOptions = {}
+    { sameScope = false, noCache }: ResolveOptions = {}
   ): Map<ComponentVariant, any> {
     const vars = this.provider.collection.getFactoryAll(
       identifier,
@@ -136,31 +170,40 @@ export class ServiceResolver extends FrameworkProvider {
     const result = new Map<ComponentVariant, any>();
 
     for (const [variant, factory] of vars) {
-      const service = this.provider.cache.getOrInsert(
-        { identifierName: identifier.identifierName, variant },
-        () => {
-          const nextResolver = this.track(identifier);
-          try {
-            return factory(nextResolver);
-          } catch (err) {
-            if (err instanceof ServiceNotFoundError) {
-              throw new MissingDependencyError(
-                identifier,
-                err.identifier,
-                this.stack
-              );
-            }
-            throw err;
+      const runFactory = () => {
+        const nextResolver = this.track(identifier);
+        try {
+          return factory(nextResolver);
+        } catch (err) {
+          if (err instanceof ServiceNotFoundError) {
+            throw new MissingDependencyError(
+              identifier,
+              err.identifier,
+              this.stack
+            );
           }
+          throw err;
         }
-      );
+      };
+      let service;
+      if (noCache) {
+        service = runFactory();
+      } else {
+        service = this.provider.cache.getOrInsert(
+          {
+            identifierName: identifier.identifierName,
+            variant,
+          },
+          runFactory
+        );
+      }
       result.set(variant, service);
     }
 
     return result;
   }
 
-  track(identifier: IdentifierValue): ServiceResolver {
+  track(identifier: IdentifierValue): Resolver {
     const depth = this.depth + 1;
     if (depth >= 100) {
       throw new RecursionLimitError();
@@ -174,15 +217,12 @@ export class ServiceResolver extends FrameworkProvider {
       throw new CircularDependencyError([...this.stack, identifier]);
     }
 
-    return new ServiceResolver(this.provider, depth, [
-      ...this.stack,
-      identifier,
-    ]);
+    return new Resolver(this.provider, depth, [...this.stack, identifier]);
   }
 }
 
 export class BasicServiceProvider extends FrameworkProvider {
-  public readonly cache = new ServiceCachePool();
+  public readonly cache = new ComponentCachePool();
   public readonly collection: Framework;
 
   constructor(
@@ -191,15 +231,11 @@ export class BasicServiceProvider extends FrameworkProvider {
     public readonly parent: FrameworkProvider | null
   ) {
     super();
-    this.collection = collection.clone();
-    this.collection.addValue(FrameworkProvider, this, {
-      scope: scope,
-      override: true,
-    });
+    this.collection = collection;
   }
 
   getRaw(identifier: IdentifierValue, options?: ResolveOptions) {
-    const resolver = new ServiceResolver(this);
+    const resolver = new Resolver(this);
     return resolver.getRaw(identifier, options);
   }
 
@@ -207,7 +243,7 @@ export class BasicServiceProvider extends FrameworkProvider {
     identifier: IdentifierValue,
     options?: ResolveOptions
   ): Map<ComponentVariant, any> {
-    const resolver = new ServiceResolver(this);
+    const resolver = new Resolver(this);
     return resolver.getAllRaw(identifier, options);
   }
 }

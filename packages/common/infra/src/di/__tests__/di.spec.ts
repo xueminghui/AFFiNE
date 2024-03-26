@@ -3,7 +3,6 @@ import { describe, expect, test } from 'vitest';
 import {
   CircularDependencyError,
   createIdentifier,
-  createScope,
   DuplicateServiceDefinitionError,
   Framework,
   FrameworkProvider,
@@ -11,23 +10,46 @@ import {
   RecursionLimitError,
   ServiceNotFoundError,
 } from '../';
+import { Entity } from '../core/components/entity';
+import { Service } from '../core/components/service';
 
 describe('di', () => {
   test('basic', () => {
     const serviceCollection = new Framework();
-    class TestService {
+    class TestService extends Service {
       a = 'b';
     }
 
     serviceCollection.service(TestService);
 
     const provider = serviceCollection.provider();
-    expect(provider.get(TestService)).toEqual({ a: 'b' });
+    expect(provider.get(TestService).a).toBe('b');
+  });
+
+  test('entity', () => {
+    const serviceCollection = new Framework();
+    class TestService extends Service {
+      a = 'b';
+    }
+
+    class TestEntity extends Entity<{ name: string }> {
+      constructor(readonly test: TestService) {
+        super();
+      }
+    }
+
+    serviceCollection.service(TestService).entity(TestEntity, [TestService]);
+
+    const provider = serviceCollection.provider();
+    const entity = provider.createEntity(TestEntity, '123', { name: 'test' });
+    expect(entity.id).toBe('123');
+    expect(entity.test.a).toBe('b');
+    expect(entity.props.name).toBe('test');
   });
 
   test('size', () => {
     const serviceCollection = new Framework();
-    class TestService {
+    class TestService extends Service {
       a = 'b';
     }
 
@@ -39,16 +61,20 @@ describe('di', () => {
   test('dependency', () => {
     const serviceCollection = new Framework();
 
-    class A {
+    class A extends Service {
       value = 'hello world';
     }
 
-    class B {
-      constructor(public a: A) {}
+    class B extends Service {
+      constructor(public a: A) {
+        super();
+      }
     }
 
-    class C {
-      constructor(public b: B) {}
+    class C extends Service {
+      constructor(public b: B) {
+        super();
+      }
     }
 
     serviceCollection.service(A).service(B, [A]).service(C, [B]);
@@ -59,18 +85,19 @@ describe('di', () => {
   });
 
   test('identifier', () => {
-    interface Animal {
+    interface Animal extends Service {
       name: string;
     }
     const Animal = createIdentifier<Animal>('Animal');
 
-    class Cat {
-      constructor() {}
+    class Cat extends Service {
       name = 'cat';
     }
 
-    class Zoo {
-      constructor(public animal: Animal) {}
+    class Zoo extends Service {
+      constructor(public animal: Animal) {
+        super();
+      }
     }
 
     const serviceCollection = new Framework();
@@ -83,24 +110,26 @@ describe('di', () => {
   test('variant', () => {
     const serviceCollection = new Framework();
 
-    interface USB {
+    interface USB extends Service {
       speed: number;
     }
 
     const USB = createIdentifier<USB>('USB');
 
-    class TypeA implements USB {
+    class TypeA extends Service implements USB {
       speed = 100;
     }
-    class TypeC implements USB {
+    class TypeC extends Service implements USB {
       speed = 300;
     }
 
-    class PC {
+    class PC extends Service {
       constructor(
         public typeA: USB,
         public ports: USB[]
-      ) {}
+      ) {
+        super();
+      }
     }
 
     serviceCollection
@@ -125,11 +154,12 @@ describe('di', () => {
 
     let pageSystemInitialized = false;
 
-    class PageSystem {
+    class PageSystem extends Service {
       mode = 'page';
       name = 'helloworld';
 
       constructor() {
+        super();
         pageSystemInitialized = true;
       }
 
@@ -142,8 +172,10 @@ describe('di', () => {
       }
     }
 
-    class CommandSystem {
-      constructor(public commands: Command[]) {}
+    class CommandSystem extends Service {
+      constructor(public commands: Command[]) {
+        super();
+      }
 
       execute(shortcut: string) {
         const command = this.commands.find(c => c.shortcut === shortcut);
@@ -204,31 +236,31 @@ describe('di', () => {
   test('scope', () => {
     const services = new Framework();
 
-    const workspaceScope = createScope('workspace');
-    const pageScope = createScope('page', workspaceScope);
-    const editorScope = createScope('editor', pageScope);
-
-    class System {
+    class System extends Service {
       appName = 'affine';
     }
 
     services.service(System);
 
-    class Workspace {
-      name = 'workspace';
-      constructor(public system: System) {}
+    class Workspace extends Entity {
+      static readonly layer = 'workspace';
+      constructor(public system: System) {
+        super();
+      }
     }
 
-    services.scope(workspaceScope).service(Workspace, [System]);
-    class Page {
-      name = 'page';
+    services.layer(Workspace).entity(Workspace, [System]);
+    class Page extends Entity {
+      static readonly layer = 'workspace';
       constructor(
         public system: System,
         public workspace: Workspace
-      ) {}
+      ) {
+        super();
+      }
     }
 
-    services.scope(pageScope).service(Page, [System, Workspace]);
+    services.layer(Page).entity(Page, [System, Workspace]);
 
     class Editor {
       name = 'editor';

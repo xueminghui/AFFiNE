@@ -13,7 +13,7 @@ export type IdentifierValue = {
   variant: ComponentVariant;
 };
 
-export type GeneralServiceIdentifier<T = any> = Identifier<T> | Type<T>;
+export type GeneralIdentifier<T = any> = Identifier<T> | Type<T>;
 
 export type Identifier<T> = {
   identifierName: string;
@@ -24,8 +24,8 @@ export type Identifier<T> = {
 export type IdentifierType<T> =
   T extends Identifier<infer R> ? R : T extends Type<infer R> ? R : never;
 
-export type TypesToDeps<T extends any[]> = {
+export type TypesToDeps<T> = {
   [index in keyof T]:
-    | GeneralServiceIdentifier<T[index]>
-    | (T[index] extends (infer I)[] ? [GeneralServiceIdentifier<I>] : never);
+    | GeneralIdentifier<T[index]>
+    | (T[index] extends (infer I)[] ? [GeneralIdentifier<I>] : never);
 };

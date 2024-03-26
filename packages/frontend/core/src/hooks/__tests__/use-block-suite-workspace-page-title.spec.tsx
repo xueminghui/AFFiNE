@@ -57,7 +57,7 @@ describe('useDocCollectionPageTitle', () => {
 
   test('journal', async () => {
     const { workspace, page } = await configureTestingEnvironment();
-    const adapter = workspace.services.get(WorkspacePropertiesAdapter);
+    const adapter = workspace.services.getService(WorkspacePropertiesAdapter);
     adapter.setJournalPageDateString(page.id, '2021-01-01');
     const { findByText } = render(
       <ServiceProviderContext.Provider value={page.services}>

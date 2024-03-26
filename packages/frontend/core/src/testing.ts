@@ -36,7 +36,7 @@ export async function configureTestingEnvironment() {
 
   await workspace.engine.waitForSynced();
 
-  const { page } = workspace.services.get(PageManager).open('page0');
+  const { page } = workspace.services.getService(PageManager).open('page0');
 
   rootServices.get(CurrentWorkspaceService).openWorkspace(workspace);
 
