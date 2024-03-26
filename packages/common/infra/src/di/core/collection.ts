@@ -1,5 +1,7 @@
+import { stableHash } from '../../utils';
 import type { Component } from './components/component';
 import type { Entity } from './components/entity';
+import type { LayerRoot } from './components/layer-root';
 import type { Service } from './components/service';
 import { DEFAULT_SERVICE_VARIANT, ROOT_SCOPE } from './consts';
 import { DuplicateServiceDefinitionError } from './error';
@@ -467,32 +469,13 @@ class FrameworkEditor {
    * services.scope(ScopeA).add(XXXService, ...);
    * ```
    */
-  layer = <
-    Arg1 extends GeneralIdentifier<Entity> & { layer: string },
-    Arg2 extends Deps | ComponentFactory<EntityType>,
-    EntityType = IdentifierType<Arg1>,
-    Deps = Arg1 extends Type<EntityType>
-      ? TypesToDeps<ConstructorParameters<Arg1>>
-      : [],
-  >(
-    root: Arg1,
-    ...[arg2]: Arg2 extends [] ? [] : [Arg2]
-  ): this => {
-    this.currentScope = [...this.currentScope, root.layer];
-    if (arg2 instanceof Function) {
-      this.collection.addFactory<any>(root as any, arg2 as any, {
-        scope: this.currentScope,
-      });
-    } else {
-      this.collection.addFactory<any>(
-        root as any,
-        dependenciesToFactory(root, arg2 as any),
-        { scope: this.currentScope }
-      );
-    }
+  layer = (root: Type<LayerRoot>): this => {
+    this.currentScope = [...this.currentScope, stableHash(root)];
 
     return this;
   };
+
+  root = this.entity;
 }
 
 /**

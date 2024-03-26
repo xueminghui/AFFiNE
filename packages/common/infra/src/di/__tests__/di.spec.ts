@@ -12,6 +12,7 @@ import {
 } from '../';
 import { Entity } from '../core/components/entity';
 import { Service } from '../core/components/service';
+import { LayerRoot } from '../core/components/layer-root';
 
 describe('di', () => {
   test('basic', () => {
@@ -242,16 +243,14 @@ describe('di', () => {
 
     services.service(System);
 
-    class Workspace extends Entity {
-      static readonly layer = 'workspace';
+    class Workspace extends LayerRoot {
       constructor(public system: System) {
         super();
       }
     }
 
     services.layer(Workspace).entity(Workspace, [System]);
-    class Page extends Entity {
-      static readonly layer = 'workspace';
+    class Page extends LayerRoot {
       constructor(
         public system: System,
         public workspace: Workspace
@@ -262,12 +261,13 @@ describe('di', () => {
 
     services.layer(Page).entity(Page, [System, Workspace]);
 
-    class Editor {
-      name = 'editor';
-      constructor(public page: Page) {}
+    class Editor extends LayerRoot {
+      constructor(public page: Page) {
+        super();
+      }
     }
 
-    services.scope(editorScope).service(Editor, [Page]);
+    services.layer(Editor).root(Editor, [Page]);
 
     const root = services.provider();
     expect(root.get(System).appName).toEqual('affine');

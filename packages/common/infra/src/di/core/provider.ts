@@ -1,5 +1,6 @@
 import type { Framework } from './collection';
 import type { Entity } from './components/entity';
+import type { LayerRoot } from './components/layer-root';
 import { withContext } from './context';
 import {
   CircularDependencyError,
@@ -62,6 +63,25 @@ export abstract class FrameworkProvider {
     return withContext(
       () =>
         this.getRaw(parseIdentifier(identifier), {
+          noCache: true,
+          sameScope: true,
+        }),
+      {
+        entityId: id,
+        entityProps: props,
+      }
+    );
+  }
+
+  createLayer<T extends Entity, Props = T extends Entity<infer P> ? P : never>(
+    root: GeneralIdentifier<LayerRoot>,
+    id: string,
+    ...[props]: Props extends undefined ? [] : [Props]
+  ): T {
+    const newProvider = this.collection.provider([...])
+    return withContext(
+      () =>
+        this.getRaw(parseIdentifier(root), {
           noCache: true,
           sameScope: true,
         }),
