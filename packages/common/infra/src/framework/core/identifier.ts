@@ -1,6 +1,6 @@
 import { stableHash } from '../../utils/stable-hash';
 import type { Component } from './components/component';
-import { DEFAULT_SERVICE_VARIANT } from './consts';
+import { DEFAULT_VARIANT } from './consts';
 import type {
   ComponentVariant,
   Identifier,
@@ -78,7 +78,7 @@ import type {
  */
 export function createIdentifier<T>(
   name: string,
-  variant: ComponentVariant = DEFAULT_SERVICE_VARIANT
+  variant: ComponentVariant = DEFAULT_VARIANT
 ): Identifier<T> & ((variant: ComponentVariant) => Identifier<T>) {
   return Object.assign(
     (variant: ComponentVariant) => {

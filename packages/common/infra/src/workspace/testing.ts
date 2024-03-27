@@ -4,7 +4,7 @@ import { differenceBy } from 'lodash-es';
 import { nanoid } from 'nanoid';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
-import type { Framework } from '../di';
+import type { Framework } from '../framework';
 import type { Memento } from '../storage';
 import { GlobalState } from '../storage';
 import { WorkspaceMetadataContext } from './context';

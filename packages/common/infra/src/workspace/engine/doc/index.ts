@@ -3,7 +3,7 @@ import { nanoid } from 'nanoid';
 import { map } from 'rxjs';
 import type { Doc as YDoc } from 'yjs';
 
-import { createIdentifier } from '../../../di';
+import { createIdentifier } from '../../../framework';
 import { LiveData } from '../../../livedata';
 import { MANUALLY_STOP } from '../../../utils';
 import { DocEngineLocalPart } from './local';

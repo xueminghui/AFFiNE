@@ -1,4 +1,4 @@
-import type { FrameworkProvider } from '../di';
+import type { FrameworkProvider } from '../framework';
 import { ObjectPool } from '../utils/object-pool';
 import type { Workspace } from '../workspace';
 import type { PageRecordList } from '.';

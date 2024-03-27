@@ -1,4 +1,4 @@
-import { createIdentifier } from '../../di';
+import { createIdentifier } from '../../framework';
 
 export interface AwarenessProvider {
   connect(): void;

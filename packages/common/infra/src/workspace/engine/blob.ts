@@ -2,7 +2,7 @@ import { DebugLogger } from '@affine/debug';
 import { Slot } from '@blocksuite/global/utils';
 import { difference } from 'lodash-es';
 
-import { createIdentifier } from '../../di';
+import { createIdentifier } from '../../framework';
 import { BlobStorageOverCapacity } from './error';
 
 const logger = new DebugLogger('affine:blob-engine');

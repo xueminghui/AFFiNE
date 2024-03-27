@@ -2,33 +2,32 @@ import { describe, expect, test } from 'vitest';
 
 import {
   CircularDependencyError,
+  ComponentNotFoundError,
   createIdentifier,
-  DuplicateServiceDefinitionError,
+  DuplicateDefinitionError,
+  Entity,
   Framework,
-  FrameworkProvider,
+  LayerRoot,
   MissingDependencyError,
   RecursionLimitError,
-  ServiceNotFoundError,
-} from '../';
-import { Entity } from '../core/components/entity';
-import { Service } from '../core/components/service';
-import { LayerRoot } from '../core/components/layer-root';
+  Service,
+} from '..';
 
 describe('di', () => {
   test('basic', () => {
-    const serviceCollection = new Framework();
+    const framework = new Framework();
     class TestService extends Service {
       a = 'b';
     }
 
-    serviceCollection.service(TestService);
+    framework.service(TestService);
 
-    const provider = serviceCollection.provider();
+    const provider = framework.provider();
     expect(provider.get(TestService).a).toBe('b');
   });
 
   test('entity', () => {
-    const serviceCollection = new Framework();
+    const framework = new Framework();
     class TestService extends Service {
       a = 'b';
     }
@@ -39,28 +38,28 @@ describe('di', () => {
       }
     }
 
-    serviceCollection.service(TestService).entity(TestEntity, [TestService]);
+    framework.service(TestService).entity(TestEntity, [TestService]);
 
-    const provider = serviceCollection.provider();
+    const provider = framework.provider();
     const entity = provider.createEntity(TestEntity, '123', { name: 'test' });
     expect(entity.id).toBe('123');
     expect(entity.test.a).toBe('b');
     expect(entity.props.name).toBe('test');
   });
 
-  test('size', () => {
-    const serviceCollection = new Framework();
+  test('componentCount', () => {
+    const framework = new Framework();
     class TestService extends Service {
       a = 'b';
     }
 
-    serviceCollection.service(TestService);
+    framework.service(TestService);
 
-    expect(serviceCollection.componentCount).toEqual(1);
+    expect(framework.componentCount).toEqual(1);
   });
 
   test('dependency', () => {
-    const serviceCollection = new Framework();
+    const framework = new Framework();
 
     class A extends Service {
       value = 'hello world';
@@ -78,9 +77,9 @@ describe('di', () => {
       }
     }
 
-    serviceCollection.service(A).service(B, [A]).service(C, [B]);
+    framework.service(A).service(B, [A]).service(C, [B]);
 
-    const provider = serviceCollection.provider();
+    const provider = framework.provider();
 
     expect(provider.get(C).b.a.value).toEqual('hello world');
   });
@@ -109,7 +108,7 @@ describe('di', () => {
   });
 
   test('variant', () => {
-    const serviceCollection = new Framework();
+    const framework = new Framework();
 
     interface USB extends Service {
       speed: number;
@@ -133,12 +132,12 @@ describe('di', () => {
       }
     }
 
-    serviceCollection
+    framework
       .impl(USB('A'), TypeA)
       .impl(USB('C'), TypeC)
       .service(PC, [USB('A'), [USB]]);
 
-    const provider = serviceCollection.provider();
+    const provider = framework.provider();
     expect(provider.get(USB('A')).speed).toEqual(100);
     expect(provider.get(USB('C')).speed).toEqual(300);
     expect(provider.get(PC).typeA.speed).toEqual(100);
@@ -146,7 +145,7 @@ describe('di', () => {
   });
 
   test('lazy initialization', () => {
-    const serviceCollection = new Framework();
+    const framework = new Framework();
     interface Command {
       shortcut: string;
       callback: () => void;
@@ -186,18 +185,18 @@ describe('di', () => {
       }
     }
 
-    serviceCollection.service(PageSystem);
-    serviceCollection.service(CommandSystem, [[Command]]);
-    serviceCollection.impl(Command('switch'), p => ({
+    framework.service(PageSystem);
+    framework.service(CommandSystem, [[Command]]);
+    framework.impl(Command('switch'), p => ({
       shortcut: 'option+s',
       callback: () => p.get(PageSystem).switchToEdgeless(),
     }));
-    serviceCollection.impl(Command('rename'), p => ({
+    framework.impl(Command('rename'), p => ({
       shortcut: 'f2',
       callback: () => p.get(PageSystem).rename(),
     }));
 
-    const provider = serviceCollection.provider();
+    const provider = framework.provider();
     const commandSystem = provider.get(CommandSystem);
 
     expect(
@@ -216,7 +215,7 @@ describe('di', () => {
   });
 
   test('duplicate, override', () => {
-    const serviceCollection = new Framework();
+    const framework = new Framework();
 
     const something = createIdentifier<any>('USB');
 
@@ -228,28 +227,28 @@ describe('di', () => {
       b = 'i am B';
     }
 
-    serviceCollection.impl(something, A).override(something, B);
+    framework.impl(something, A).override(something, B);
 
-    const provider = serviceCollection.provider();
+    const provider = framework.provider();
     expect(provider.get(something)).toEqual({ b: 'i am B' });
   });
 
-  test('scope', () => {
-    const services = new Framework();
+  test('layer', () => {
+    const framework = new Framework();
 
     class System extends Service {
       appName = 'affine';
     }
 
-    services.service(System);
+    framework.service(System);
 
     class Workspace extends LayerRoot {
-      constructor(public system: System) {
+      constructor(public readonly system: System) {
         super();
       }
     }
 
-    services.layer(Workspace).entity(Workspace, [System]);
+    framework.layer(Workspace).entity(Workspace, [System]);
     class Page extends LayerRoot {
       constructor(
         public system: System,
@@ -259,7 +258,7 @@ describe('di', () => {
       }
     }
 
-    services.layer(Page).entity(Page, [System, Workspace]);
+    framework.layer(Workspace).layer(Page).entity(Page, [System, Workspace]);
 
     class Editor extends LayerRoot {
       constructor(public page: Page) {
@@ -267,70 +266,78 @@ describe('di', () => {
       }
     }
 
-    services.layer(Editor).root(Editor, [Page]);
+    framework.layer(Workspace).layer(Page).layer(Editor).root(Editor, [Page]);
 
-    const root = services.provider();
+    const root = framework.provider();
     expect(root.get(System).appName).toEqual('affine');
-    expect(() => root.get(Workspace)).toThrowError(ServiceNotFoundError);
+    expect(() => root.get(Workspace)).toThrowError(ComponentNotFoundError);
 
-    const workspace = services.provider(workspaceScope, root);
-    expect(workspace.get(Workspace).name).toEqual('workspace');
-    expect(workspace.get(System).appName).toEqual('affine');
-    expect(() => root.get(Page)).toThrowError(ServiceNotFoundError);
+    const workspace = root.createLayer(Workspace, 'test-workspace');
+    expect(workspace.id).toEqual('test-workspace');
+    expect(workspace.system.appName).toEqual('affine');
+    expect(() => root.get(Page)).toThrowError(ComponentNotFoundError);
 
-    const page = services.provider(pageScope, workspace);
-    expect(page.get(Page).name).toEqual('page');
-    expect(page.get(Workspace).name).toEqual('workspace');
-    expect(page.get(System).appName).toEqual('affine');
+    const page = workspace.framework.createLayer(Page, 'test-page');
+    expect(page.id).toEqual('test-page');
+    expect(page.workspace.id).toEqual('test-workspace');
+    expect(page.system.appName).toEqual('affine');
 
-    const editor = services.provider(editorScope, page);
-    expect(editor.get(Editor).name).toEqual('editor');
+    const editor = page.framework.createLayer(Editor, 'test-editor');
+    expect(editor.id).toEqual('test-editor');
   });
 
   test('service not found', () => {
-    const serviceCollection = new Framework();
+    const framework = new Framework();
 
-    const provider = serviceCollection.provider();
+    const provider = framework.provider();
     expect(() => provider.get(createIdentifier('SomeService'))).toThrowError(
-      ServiceNotFoundError
+      ComponentNotFoundError
     );
   });
 
   test('missing dependency', () => {
-    const serviceCollection = new Framework();
+    const framework = new Framework();
 
-    class A {
+    class A extends Service {
       value = 'hello world';
     }
 
-    class B {
-      constructor(public a: A) {}
+    class B extends Service {
+      constructor(public a: A) {
+        super();
+      }
     }
 
-    serviceCollection.service(B, [A]);
+    framework.service(B, [A]);
 
-    const provider = serviceCollection.provider();
+    const provider = framework.provider();
     expect(() => provider.get(B)).toThrowError(MissingDependencyError);
   });
 
   test('circular dependency', () => {
-    const serviceCollection = new Framework();
+    const framework = new Framework();
 
-    class A {
-      constructor(public c: C) {}
+    class A extends Service {
+      constructor(public c: C) {
+        super();
+      }
     }
 
-    class B {
-      constructor(public a: A) {}
+    class B extends Service {
+      constructor(public a: A) {
+        super();
+      }
     }
 
-    class C {
-      constructor(public b: B) {}
+    class C extends Service {
+      constructor(public b: B) {
+        super();
+      }
     }
 
-    serviceCollection.service(A, [C]).service(B, [A]).service(C, [B]);
+    framework.service(A, [C]).service(B, [A]).service(C, [B]);
 
-    const provider = serviceCollection.provider();
+    const provider = framework.provider();
     expect(() => provider.get(A)).toThrowError(CircularDependencyError);
     expect(() => provider.get(B)).toThrowError(CircularDependencyError);
     expect(() => provider.get(C)).toThrowError(CircularDependencyError);
@@ -339,18 +346,18 @@ describe('di', () => {
   test('duplicate service definition', () => {
     const serviceCollection = new Framework();
 
-    class A {}
+    class A extends Service {}
 
     serviceCollection.service(A);
     expect(() => serviceCollection.service(A)).toThrowError(
-      DuplicateServiceDefinitionError
+      DuplicateDefinitionError
     );
 
     class B {}
     const Something = createIdentifier('something');
     serviceCollection.impl(Something, A);
     expect(() => serviceCollection.impl(Something, B)).toThrowError(
-      DuplicateServiceDefinitionError
+      DuplicateDefinitionError
     );
   });
 
@@ -379,11 +386,5 @@ describe('di', () => {
     expect(() => provider.get(Something('0'))).toThrowError(
       RecursionLimitError
     );
-  });
-
-  test('self resolve', () => {
-    const serviceCollection = new Framework();
-    const provider = serviceCollection.provider();
-    expect(provider.get(FrameworkProvider)).toEqual(provider);
   });
 });

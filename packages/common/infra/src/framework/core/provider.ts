@@ -1,14 +1,13 @@
-import { stableHash } from '../../utils';
-import type { Framework } from './collection';
 import type { Entity } from './components/entity';
 import type { LayerRoot } from './components/layer-root';
-import { withContext } from './context';
+import { withContext } from './constructor-context';
 import {
   CircularDependencyError,
+  ComponentNotFoundError,
   MissingDependencyError,
   RecursionLimitError,
-  ServiceNotFoundError,
 } from './error';
+import type { Framework } from './framework';
 import { parseIdentifier } from './identifier';
 import type {
   ComponentVariant,
@@ -18,7 +17,7 @@ import type {
 } from './types';
 
 export interface ResolveOptions {
-  sameScope?: boolean;
+  sameLayer?: boolean;
   optional?: boolean;
   noCache?: boolean;
 }
@@ -67,7 +66,7 @@ export abstract class FrameworkProvider {
       () =>
         this.getRaw(parseIdentifier(identifier), {
           noCache: true,
-          sameScope: true,
+          sameLayer: true,
         }),
       {
         entityId: id,
@@ -76,20 +75,22 @@ export abstract class FrameworkProvider {
     );
   }
 
-  createLayer<T extends Entity, Props = T extends Entity<infer P> ? P : never>(
-    root: GeneralIdentifier<LayerRoot>,
+  createLayer<
+    T extends LayerRoot,
+    Props = T extends LayerRoot<infer P> ? P : never,
+  >(
+    root: GeneralIdentifier<T>,
     id: string,
     ...[props]: Props extends undefined ? [] : [Props]
   ): T {
-    const newProvider = this.collection.provider([
-      ...this.scope,
-      stableHash(root),
-    ]);
+    const newProvider = this.collection.provider(
+      [...this.scope, parseIdentifier(root).identifierName],
+      this
+    );
     return withContext(
       () =>
         newProvider.getRaw(parseIdentifier(root), {
-          noCache: true,
-          sameScope: true,
+          sameLayer: true,
         }),
       {
         entityId: id,
@@ -128,7 +129,7 @@ class Resolver extends FrameworkProvider {
   getRaw(
     identifier: IdentifierValue,
     {
-      sameScope = false,
+      sameLayer = false,
       optional = false,
       noCache = false,
     }: ResolveOptions = {}
@@ -138,9 +139,9 @@ class Resolver extends FrameworkProvider {
       this.provider.scope
     );
     if (!factory) {
-      if (this.provider.parent && !sameScope) {
+      if (this.provider.parent && !sameLayer) {
         return this.provider.parent.getRaw(identifier, {
-          sameScope,
+          sameLayer,
           optional,
           noCache,
         });
@@ -149,7 +150,7 @@ class Resolver extends FrameworkProvider {
       if (optional) {
         return undefined;
       }
-      throw new ServiceNotFoundError(identifier);
+      throw new ComponentNotFoundError(identifier);
     }
 
     const runFactory = () => {
@@ -159,7 +160,7 @@ class Resolver extends FrameworkProvider {
           provider: this.provider,
         });
       } catch (err) {
-        if (err instanceof ServiceNotFoundError) {
+        if (err instanceof ComponentNotFoundError) {
           throw new MissingDependencyError(
             identifier,
             err.identifier,
@@ -179,7 +180,7 @@ class Resolver extends FrameworkProvider {
 
   getAllRaw(
     identifier: IdentifierValue,
-    { sameScope = false, noCache }: ResolveOptions = {}
+    { sameLayer = false, noCache }: ResolveOptions = {}
   ): Map<ComponentVariant, any> {
     const vars = this.provider.collection.getFactoryAll(
       identifier,
@@ -187,7 +188,7 @@ class Resolver extends FrameworkProvider {
     );
 
     if (vars === undefined) {
-      if (this.provider.parent && !sameScope) {
+      if (this.provider.parent && !sameLayer) {
         return this.provider.parent.getAllRaw(identifier);
       }
 
@@ -202,7 +203,7 @@ class Resolver extends FrameworkProvider {
         try {
           return factory(nextResolver);
         } catch (err) {
-          if (err instanceof ServiceNotFoundError) {
+          if (err instanceof ComponentNotFoundError) {
             throw new MissingDependencyError(
               identifier,
               err.identifier,

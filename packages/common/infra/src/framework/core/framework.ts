@@ -1,14 +1,13 @@
-import { stableHash } from '../../utils';
 import type { Component } from './components/component';
 import type { Entity } from './components/entity';
 import type { LayerRoot } from './components/layer-root';
 import type { Service } from './components/service';
-import { DEFAULT_SERVICE_VARIANT, ROOT_SCOPE } from './consts';
-import { DuplicateServiceDefinitionError } from './error';
+import { DEFAULT_VARIANT, ROOT_LAYER } from './consts';
+import { DuplicateDefinitionError } from './error';
 import { parseIdentifier } from './identifier';
+import { stringifyLayer } from './layer';
 import type { FrameworkProvider } from './provider';
 import { BasicServiceProvider } from './provider';
-import { stringifyLayer } from './scope';
 import type {
   ComponentFactory,
   ComponentVariant,
@@ -189,10 +188,9 @@ export class Framework {
     { scope, override }: { scope?: FrameworkLayer; override?: boolean } = {}
   ) {
     // convert scope to string
-    const normalizedScope = stringifyLayer(scope ?? ROOT_SCOPE);
+    const normalizedScope = stringifyLayer(scope ?? ROOT_LAYER);
     const normalizedIdentifier = parseIdentifier(identifier);
-    const normalizedVariant =
-      normalizedIdentifier.variant ?? DEFAULT_SERVICE_VARIANT;
+    const normalizedVariant = normalizedIdentifier.variant ?? DEFAULT_VARIANT;
 
     const services =
       this.components.get(normalizedScope) ??
@@ -204,18 +202,17 @@ export class Framework {
 
     // throw if service already exists, unless it is an override
     if (variants.has(normalizedVariant) && !override) {
-      throw new DuplicateServiceDefinitionError(normalizedIdentifier);
+      throw new DuplicateDefinitionError(normalizedIdentifier);
     }
     variants.set(normalizedVariant, factory);
     services.set(normalizedIdentifier.identifierName, variants);
     this.components.set(normalizedScope, services);
   }
 
-  remove(identifier: IdentifierValue, scope: FrameworkLayer = ROOT_SCOPE) {
+  remove(identifier: IdentifierValue, scope: FrameworkLayer = ROOT_LAYER) {
     const normalizedScope = stringifyLayer(scope);
     const normalizedIdentifier = parseIdentifier(identifier);
-    const normalizedVariant =
-      normalizedIdentifier.variant ?? DEFAULT_SERVICE_VARIANT;
+    const normalizedVariant = normalizedIdentifier.variant ?? DEFAULT_VARIANT;
 
     const services = this.components.get(normalizedScope);
     if (!services) {
@@ -243,7 +240,7 @@ export class Framework {
    * @param parent The parent service provider, it is required if the scope is not the root scope.
    */
   provider(
-    scope: FrameworkLayer = ROOT_SCOPE,
+    scope: FrameworkLayer = ROOT_LAYER,
     parent: FrameworkProvider | null = null
   ): FrameworkProvider {
     return new BasicServiceProvider(this, scope, parent);
@@ -254,12 +251,12 @@ export class Framework {
    */
   getFactory(
     identifier: IdentifierValue,
-    scope: FrameworkLayer = ROOT_SCOPE
+    scope: FrameworkLayer = ROOT_LAYER
   ): ComponentFactory | undefined {
     return this.components
       .get(stringifyLayer(scope))
       ?.get(identifier.identifierName)
-      ?.get(identifier.variant ?? DEFAULT_SERVICE_VARIANT);
+      ?.get(identifier.variant ?? DEFAULT_VARIANT);
   }
 
   /**
@@ -267,7 +264,7 @@ export class Framework {
    */
   getFactoryAll(
     identifier: IdentifierValue,
-    scope: FrameworkLayer = ROOT_SCOPE
+    scope: FrameworkLayer = ROOT_LAYER
   ): Map<ComponentVariant, ComponentFactory> {
     return new Map(
       this.components.get(stringifyLayer(scope))?.get(identifier.identifierName)
@@ -295,10 +292,10 @@ export class Framework {
 }
 
 /**
- * A helper class to edit a service collection.
+ * A helper class to edit a framework.
  */
 class FrameworkEditor {
-  private currentScope: FrameworkLayer = ROOT_SCOPE;
+  private currentLayer: FrameworkLayer = ROOT_LAYER;
 
   constructor(private readonly collection: Framework) {}
 
@@ -325,17 +322,17 @@ class FrameworkEditor {
   ): this => {
     if (arg2 instanceof Function) {
       this.collection.addFactory<any>(service as any, arg2 as any, {
-        scope: this.currentScope,
+        scope: this.currentLayer,
       });
     } else if (arg2 instanceof Array || arg2 === undefined) {
       this.collection.addFactory<any>(
         service as any,
         dependenciesToFactory(service, arg2 as any),
-        { scope: this.currentScope }
+        { scope: this.currentLayer }
       );
     } else {
       this.collection.addValue<any>(service as any, arg2, {
-        scope: this.currentScope,
+        scope: this.currentLayer,
       });
     }
 
@@ -355,13 +352,13 @@ class FrameworkEditor {
   ): this => {
     if (arg2 instanceof Function) {
       this.collection.addFactory<any>(entity as any, arg2 as any, {
-        scope: this.currentScope,
+        scope: this.currentLayer,
       });
     } else {
       this.collection.addFactory<any>(
         entity as any,
         dependenciesToFactory(entity, arg2 as any),
-        { scope: this.currentScope }
+        { scope: this.currentLayer }
       );
     }
 
@@ -375,11 +372,11 @@ class FrameworkEditor {
    *
    * @example
    * ```ts
-   * addImpl(ServiceIdentifier, ServiceClass, [dependencies, ...])
+   * addImpl(Identifier, Class, [dependencies, ...])
    * or
-   * addImpl(ServiceIdentifier, Instance)
+   * addImpl(Identifier, Instance)
    * or
-   * addImpl(ServiceIdentifier, Factory)
+   * addImpl(Identifier, Factory)
    * ```
    */
   impl = <
@@ -399,11 +396,11 @@ class FrameworkEditor {
       this.collection.addFactory<any>(
         identifier,
         dependenciesToFactory(arg2, arg3 as any[]),
-        { scope: this.currentScope }
+        { scope: this.currentLayer }
       );
     } else {
       this.collection.addValue(identifier, arg2 as any, {
-        scope: this.currentScope,
+        scope: this.currentLayer,
       });
     }
 
@@ -411,19 +408,19 @@ class FrameworkEditor {
   };
 
   /**
-   * same as {@link impl} but this method will override the service if it exists.
+   * same as {@link impl} but this method will override the component if it exists.
    *
    * @see {@link Framework}
    *
    * @example
    * ```ts
-   * override(OriginServiceClass, NewServiceClass, [dependencies, ...])
+   * override(OriginClass, NewClass, [dependencies, ...])
    * or
-   * override(ServiceIdentifier, ServiceClass, [dependencies, ...])
+   * override(Identifier, Class, [dependencies, ...])
    * or
-   * override(ServiceIdentifier, Instance)
+   * override(Identifier, Instance)
    * or
-   * override(ServiceIdentifier, Factory)
+   * override(Identifier, Factory)
    * ```
    */
   override = <
@@ -440,17 +437,17 @@ class FrameworkEditor {
     ...[arg3]: Arg3 extends [] ? [] : [Arg3]
   ): this => {
     if (arg2 === null) {
-      this.collection.remove(parseIdentifier(identifier), this.currentScope);
+      this.collection.remove(parseIdentifier(identifier), this.currentLayer);
       return this;
     } else if (arg2 instanceof Function) {
       this.collection.addFactory<any>(
         identifier,
         dependenciesToFactory(arg2, arg3 as any[]),
-        { scope: this.currentScope, override: true }
+        { scope: this.currentLayer, override: true }
       );
     } else {
       this.collection.addValue(identifier, arg2 as any, {
-        scope: this.currentScope,
+        scope: this.currentLayer,
         override: true,
       });
     }
@@ -470,7 +467,10 @@ class FrameworkEditor {
    * ```
    */
   layer = (root: Type<LayerRoot>): this => {
-    this.currentScope = [...this.currentScope, stableHash(root)];
+    this.currentLayer = [
+      ...this.currentLayer,
+      parseIdentifier(root).identifierName,
+    ];
 
     return this;
   };

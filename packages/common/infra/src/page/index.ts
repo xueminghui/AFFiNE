@@ -4,8 +4,8 @@ export * from './record';
 export * from './record-list';
 export * from './service-scope';
 
-import type { Framework } from '../di';
-import { FrameworkProvider } from '../di';
+import type { Framework } from '../framework';
+import { FrameworkProvider } from '../framework';
 import { CleanupService } from '../lifecycle';
 import { Workspace, WorkspaceLocalState, WorkspaceScope } from '../workspace';
 import { BlockSuitePageContext, PageRecordContext } from './context';

@@ -1,4 +1,4 @@
-import { CONSTRUCTOR_CONTEXT } from '../context';
+import { CONSTRUCTOR_CONTEXT } from '../constructor-context';
 import type { FrameworkProvider } from '../provider';
 
 export class Component {

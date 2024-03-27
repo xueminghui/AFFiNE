@@ -2,7 +2,7 @@ export * from './app-config-storage';
 export * from './atom';
 export * from './blocksuite';
 export * from './command';
-export * from './di';
+export * from './framework';
 export * from './initialization';
 export * from './lifecycle';
 export * from './livedata';
@@ -11,7 +11,7 @@ export * from './storage';
 export * from './utils';
 export * from './workspace';
 
-import type { Framework } from './di';
+import type { Framework } from './framework';
 import { CleanupService } from './lifecycle';
 import { configurePageServices } from './page';
 import { GlobalCache, GlobalState, MemoryMemento } from './storage';

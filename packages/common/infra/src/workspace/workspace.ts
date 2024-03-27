@@ -2,7 +2,7 @@ import { DebugLogger } from '@affine/debug';
 import { Slot } from '@blocksuite/global/utils';
 import type { DocCollection } from '@blocksuite/store';
 
-import type { FrameworkProvider } from '../di';
+import type { FrameworkProvider } from '../framework';
 import { CleanupService } from '../lifecycle';
 import type { WorkspaceEngine, WorkspaceEngineStatus } from './engine';
 import type { WorkspaceMetadata } from './metadata';

@@ -1,3 +1,3 @@
-import { createScope } from '../di';
+import { createScope } from '../framework';
 
 export const WorkspaceScope = createScope('workspace');

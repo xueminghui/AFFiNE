@@ -23,8 +23,8 @@ import { nanoid } from 'nanoid';
 import type { Awareness } from 'y-protocols/awareness.js';
 import type { Doc as YDoc } from 'yjs';
 
-import type { Framework } from '../di';
-import { createIdentifier } from '../di';
+import type { Framework } from '../framework';
+import { createIdentifier } from '../framework';
 import { BlobEngine } from './engine/blob';
 import { globalBlockSuiteSchema } from './global-schema';
 import type { WorkspaceMetadata } from './metadata';

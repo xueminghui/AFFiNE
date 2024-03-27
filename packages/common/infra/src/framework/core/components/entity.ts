@@ -1,4 +1,4 @@
-import { CONSTRUCTOR_CONTEXT } from '../context';
+import { CONSTRUCTOR_CONTEXT } from '../constructor-context';
 import { Component } from './component';
 
 export class Entity<Props = any> extends Component {

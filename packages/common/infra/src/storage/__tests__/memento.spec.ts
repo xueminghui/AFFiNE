@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
-import { Framework } from '../../di';
+import { Framework } from '../../framework';
 import { GlobalCache, GlobalState, MemoryMemento } from '..';
 
 describe('memento', () => {

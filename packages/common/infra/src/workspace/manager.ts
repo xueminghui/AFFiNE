@@ -6,7 +6,7 @@ import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
 import { setupEditorFlags } from '../atom/settings';
 import { fixWorkspaceVersion } from '../blocksuite';
-import type { Framework, FrameworkProvider } from '../di';
+import type { Framework, FrameworkProvider } from '../framework';
 import { ObjectPool } from '../utils/object-pool';
 import { configureWorkspaceContext } from './context';
 import type { BlobStorage } from './engine';

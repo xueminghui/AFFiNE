@@ -11,8 +11,8 @@ export * from './testing';
 export * from './upgrade';
 export * from './workspace';
 
-import type { Framework } from '../di';
-import { FrameworkProvider } from '../di';
+import type { Framework } from '../framework';
+import { FrameworkProvider } from '../framework';
 import { CleanupService } from '../lifecycle';
 import { GlobalCache, GlobalState, MemoryMemento } from '../storage';
 import {

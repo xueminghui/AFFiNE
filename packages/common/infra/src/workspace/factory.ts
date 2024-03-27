@@ -1,5 +1,5 @@
-import type { Framework } from '../di';
-import { createIdentifier } from '../di';
+import type { Framework } from '../framework';
+import { createIdentifier } from '../framework';
 
 export interface WorkspaceFactory {
   name: string;

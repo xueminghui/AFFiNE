@@ -1,7 +1,7 @@
 import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
 
-import type { Framework } from '../di';
-import { createIdentifier } from '../di';
+import type { Framework } from '../framework';
+import { createIdentifier } from '../framework';
 import type { PageRecord } from './record';
 import { PageScope } from './service-scope';
 

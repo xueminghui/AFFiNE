@@ -2,7 +2,7 @@ import { WorkspaceFlavour } from '@affine/env/workspace';
 import { describe, expect, test } from 'vitest';
 
 import { configureInfraServices, configureTestingInfraServices } from '../..';
-import { Framework } from '../../di';
+import { Framework } from '../../framework';
 import { WorkspaceListService, WorkspaceManager } from '../';
 
 describe('Workspace System', () => {

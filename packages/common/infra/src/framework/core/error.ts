@@ -1,4 +1,4 @@
-import { DEFAULT_SERVICE_VARIANT } from './consts';
+import { DEFAULT_VARIANT } from './consts';
 import type { IdentifierValue } from './types';
 
 export class RecursionLimitError extends Error {
@@ -16,9 +16,9 @@ export class CircularDependencyError extends Error {
   }
 }
 
-export class ServiceNotFoundError extends Error {
+export class ComponentNotFoundError extends Error {
   constructor(public readonly identifier: IdentifierValue) {
-    super(`Service ${stringifyIdentifier(identifier)} not found in container`);
+    super(`Component ${stringifyIdentifier(identifier)} not found in container`);
   }
 }
 
@@ -31,22 +31,22 @@ export class MissingDependencyError extends Error {
     super(
       `Missing dependency ${stringifyIdentifier(
         target
-      )} in creating service ${stringifyIdentifier(
+      )} in creating ${stringifyIdentifier(
         from
       )}.\n${stringifyDependencyStack(dependencyStack)}`
     );
   }
 }
 
-export class DuplicateServiceDefinitionError extends Error {
+export class DuplicateDefinitionError extends Error {
   constructor(public readonly identifier: IdentifierValue) {
-    super(`Service ${stringifyIdentifier(identifier)} already exists`);
+    super(`${stringifyIdentifier(identifier)} already exists`);
   }
 }
 
 function stringifyIdentifier(identifier: IdentifierValue) {
   return `[${identifier.identifierName}]${
-    identifier.variant !== DEFAULT_SERVICE_VARIANT
+    identifier.variant !== DEFAULT_VARIANT
       ? `(${identifier.variant})`
       : ''
   }`;

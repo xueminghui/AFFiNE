@@ -3,7 +3,7 @@ import type { WorkspaceFlavour } from '@affine/env/workspace';
 import type { DocCollection } from '@blocksuite/store';
 import { differenceWith } from 'lodash-es';
 
-import { createIdentifier } from '../../di';
+import { createIdentifier } from '../../framework';
 import { LiveData } from '../../livedata';
 import type { GlobalCache } from '../../storage';
 import type { BlobStorage } from '../engine';

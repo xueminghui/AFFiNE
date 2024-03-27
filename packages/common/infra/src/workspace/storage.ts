@@ -1,4 +1,4 @@
-import { createIdentifier } from '../di';
+import { createIdentifier } from '../framework';
 import type { Memento } from '../storage';
 
 export interface WorkspaceLocalState extends Memento {}
