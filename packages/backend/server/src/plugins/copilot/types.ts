@@ -1,3 +1,4 @@
+import { AiPromptRole } from '@prisma/client';
 import type { ClientOptions as OpenAIClientOptions } from 'openai';
 
 export interface CopilotConfig {
@@ -23,10 +24,8 @@ export interface CopilotProvider {
   getCapabilities(): CopilotProviderCapability[];
 }
 
-export const ChatMessageRole = ['system', 'assistant', 'user'] as const;
-
 export type ChatMessage = {
-  role: (typeof ChatMessageRole)[number];
+  role: AiPromptRole;
   content: string;
 };
 
