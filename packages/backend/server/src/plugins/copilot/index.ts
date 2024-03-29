@@ -1,11 +1,11 @@
 import { ServerFeature } from '../../core/config';
 import { Plugin } from '../registry';
-import { CopilotPromptService } from './prompt';
+import { PromptService } from './prompt';
 import { assertProvidersConfigs, CopilotProviderService } from './providers';
 
 @Plugin({
   name: 'copilot',
-  providers: [CopilotPromptService, CopilotProviderService],
+  providers: [PromptService, CopilotProviderService],
   contributesTo: ServerFeature.Copilot,
   if: config => {
     if (config.flavor.graphql) {

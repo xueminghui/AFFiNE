@@ -4,16 +4,24 @@ import { PrismaClient } from '@prisma/client';
 import { ChatMessage } from './types';
 
 @Injectable()
-export class CopilotPromptService {
+export class PromptService {
   constructor(private readonly db: PrismaClient) {}
 
-  // list prompt names
+  /**
+   * list prompt names
+   * @returns prompt names
+   */
   async list() {
     return this.db.aiPrompt
       .findMany({ select: { name: true } })
       .then(prompts => Array.from(new Set(prompts.map(p => p.name))));
   }
 
+  /**
+   * get prompt messages by prompt name
+   * @param name prompt name
+   * @returns prompt messages
+   */
   async get(name: string): Promise<ChatMessage[]> {
     return this.db.aiPrompt.findMany({
       where: {
