@@ -381,6 +381,7 @@ __metadata:
     graphql: "npm:^16.8.1"
     history: "npm:^5.3.0"
     idb: "npm:^8.0.0"
+    idb-keyval: "npm:^6.2.1"
     image-blob-reduce: "npm:^4.1.0"
     jotai: "npm:^2.6.5"
     jotai-devtools: "npm:^0.8.0"

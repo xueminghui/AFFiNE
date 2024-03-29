@@ -4,30 +4,28 @@ export * from './blocksuite';
 export * from './command';
 export * from './framework';
 export * from './initialization';
-export * from './lifecycle';
 export * from './livedata';
-export * from './page';
+export * from './modules/doc';
+export * from './modules/storage';
+export * from './modules/workspace';
 export * from './storage';
+export * from './sync';
 export * from './utils';
-export * from './workspace';
 
 import type { Framework } from './framework';
-import { CleanupService } from './lifecycle';
-import { configurePageServices } from './page';
-import { GlobalCache, GlobalState, MemoryMemento } from './storage';
+import { configureDocModule } from './modules/doc';
+import { configureTestingGlobalStorage } from './modules/storage';
 import {
-  configureTestingWorkspaceServices,
-  configureWorkspaceServices,
-} from './workspace';
+  configureTestingWorkspaceProvider,
+  configureWorkspaceModule,
+} from './modules/workspace';
 
-export function configureInfraServices(services: Framework) {
-  services.service(CleanupService);
-  configureWorkspaceServices(services);
-  configurePageServices(services);
+export function configureInfraModules(services: Framework) {
+  configureWorkspaceModule(services);
+  configureDocModule(services);
 }
 
-export function configureTestingInfraServices(services: Framework) {
-  configureTestingWorkspaceServices(services);
-  services.override(GlobalCache, MemoryMemento);
-  services.override(GlobalState, MemoryMemento);
+export function configureTestingInfraModules(services: Framework) {
+  configureTestingGlobalStorage(services);
+  configureTestingWorkspaceProvider(services);
 }

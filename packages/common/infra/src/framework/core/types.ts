@@ -29,3 +29,8 @@ export type TypesToDeps<T> = {
     | GeneralIdentifier<T[index]>
     | (T[index] extends (infer I)[] ? [GeneralIdentifier<I>] : never);
 };
+
+export type SubComponent = {
+  identifier: Identifier<any>;
+  factory: ComponentFactory;
+};

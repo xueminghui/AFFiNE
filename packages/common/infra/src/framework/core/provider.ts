@@ -7,6 +7,7 @@ import {
   MissingDependencyError,
   RecursionLimitError,
 } from './error';
+import { EventBus, type FrameworkEvent } from './event';
 import type { Framework } from './framework';
 import { parseIdentifier } from './identifier';
 import type {
@@ -30,38 +31,43 @@ export abstract class FrameworkProvider {
     identifier: IdentifierValue,
     options?: ResolveOptions
   ): Map<ComponentVariant, any>;
+  abstract dispose(): void;
+  abstract eventBus: EventBus;
 
-  get<T>(identifier: GeneralIdentifier<T>, options?: ResolveOptions): T {
+  get = <T>(identifier: GeneralIdentifier<T>, options?: ResolveOptions): T => {
     return this.getRaw(parseIdentifier(identifier), {
       ...options,
       optional: false,
     });
-  }
+  };
 
-  getAll<T>(
+  getAll = <T>(
     identifier: GeneralIdentifier<T>,
     options?: ResolveOptions
-  ): Map<ComponentVariant, T> {
+  ): Map<ComponentVariant, T> => {
     return this.getAllRaw(parseIdentifier(identifier), {
       ...options,
     });
-  }
+  };
 
-  getOptional<T>(
+  getOptional = <T>(
     identifier: GeneralIdentifier<T>,
     options?: ResolveOptions
-  ): T | null {
+  ): T | null => {
     return this.getRaw(parseIdentifier(identifier), {
       ...options,
       optional: true,
     });
-  }
+  };
 
-  createEntity<T extends Entity, Props = T extends Entity<infer P> ? P : never>(
+  createEntity = <
+    T extends Entity,
+    Props extends T extends Entity<infer P> ? P : never,
+  >(
     identifier: GeneralIdentifier<T>,
     id: string,
     ...[props]: Props extends undefined ? [] : [Props]
-  ): T {
+  ): T => {
     return withContext(
       () =>
         this.getRaw(parseIdentifier(identifier), {
@@ -73,16 +79,16 @@ export abstract class FrameworkProvider {
         entityProps: props,
       }
     );
-  }
+  };
 
-  createLayer<
+  createLayer = <
     T extends LayerRoot,
-    Props = T extends LayerRoot<infer P> ? P : never,
+    Props extends T extends LayerRoot<infer P> ? P : never,
   >(
     root: GeneralIdentifier<T>,
     id: string,
     ...[props]: Props extends undefined ? [] : [Props]
-  ): T {
+  ): T => {
     const newProvider = this.collection.provider(
       [...this.scope, parseIdentifier(root).identifierName],
       this
@@ -97,6 +103,14 @@ export abstract class FrameworkProvider {
         entityProps: props,
       }
     );
+  };
+
+  emitEvent = <T>(event: FrameworkEvent<T>, payload: T) => {
+    this.eventBus.emit(event, payload);
+  };
+
+  [Symbol.dispose]() {
+    this.dispose();
   }
 }
 
@@ -112,11 +126,29 @@ export class ComponentCachePool {
     this.cache.set(identifier.identifierName, cache);
     return cached;
   }
+
+  dispose() {
+    for (const t of this.cache.values()) {
+      for (const i of t.values()) {
+        if (typeof i === 'object' && typeof i[Symbol.dispose] === 'function') {
+          try {
+            i[Symbol.dispose]();
+          } catch (err) {
+            console.error(err);
+          }
+        }
+      }
+    }
+  }
+
+  [Symbol.dispose]() {
+    this.dispose();
+  }
 }
 
 class Resolver extends FrameworkProvider {
   constructor(
-    public readonly provider: BasicServiceProvider,
+    public readonly provider: BasicFrameworkProvider,
     public readonly depth = 0,
     public readonly stack: IdentifierValue[] = []
   ) {
@@ -125,6 +157,7 @@ class Resolver extends FrameworkProvider {
 
   scope = this.provider.scope;
   collection = this.provider.collection;
+  eventBus = this.provider.eventBus;
 
   getRaw(
     identifier: IdentifierValue,
@@ -247,11 +280,14 @@ class Resolver extends FrameworkProvider {
 
     return new Resolver(this.provider, depth, [...this.stack, identifier]);
   }
+
+  override dispose(): void {}
 }
 
-export class BasicServiceProvider extends FrameworkProvider {
+export class BasicFrameworkProvider extends FrameworkProvider {
   public readonly cache = new ComponentCachePool();
   public readonly collection: Framework;
+  public readonly eventBus: EventBus;
 
   constructor(
     collection: Framework,
@@ -260,6 +296,7 @@ export class BasicServiceProvider extends FrameworkProvider {
   ) {
     super();
     this.collection = collection;
+    this.eventBus = new EventBus(this, this.parent?.eventBus);
   }
 
   getRaw(identifier: IdentifierValue, options?: ResolveOptions) {
@@ -273,5 +310,9 @@ export class BasicServiceProvider extends FrameworkProvider {
   ): Map<ComponentVariant, any> {
     const resolver = new Resolver(this);
     return resolver.getAllRaw(identifier, options);
+  }
+
+  dispose(): void {
+    this.cache.dispose();
   }
 }

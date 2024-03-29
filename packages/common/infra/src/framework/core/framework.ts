@@ -2,12 +2,12 @@ import type { Component } from './components/component';
 import type { Entity } from './components/entity';
 import type { LayerRoot } from './components/layer-root';
 import type { Service } from './components/service';
-import { DEFAULT_VARIANT, ROOT_LAYER } from './consts';
+import { DEFAULT_VARIANT, ROOT_LAYER, SUB_COMPONENTS } from './consts';
 import { DuplicateDefinitionError } from './error';
 import { parseIdentifier } from './identifier';
 import { stringifyLayer } from './layer';
 import type { FrameworkProvider } from './provider';
-import { BasicServiceProvider } from './provider';
+import { BasicFrameworkProvider } from './provider';
 import type {
   ComponentFactory,
   ComponentVariant,
@@ -16,6 +16,7 @@ import type {
   Identifier,
   IdentifierType,
   IdentifierValue,
+  SubComponent,
   Type,
   TypesToDeps,
 } from './types';
@@ -243,7 +244,7 @@ export class Framework {
     scope: FrameworkLayer = ROOT_LAYER,
     parent: FrameworkProvider | null = null
   ): FrameworkProvider {
-    return new BasicServiceProvider(this, scope, parent);
+    return new BasicFrameworkProvider(this, scope, parent);
   }
 
   /**
@@ -310,7 +311,7 @@ class FrameworkEditor {
    * ```
    */
   service = <
-    Arg1 extends GeneralIdentifier<Service>,
+    Arg1 extends Type<Service>,
     Arg2 extends Deps | ComponentFactory<ServiceType> | ServiceType,
     ServiceType = IdentifierType<Arg1>,
     Deps = Arg1 extends Type<ServiceType>
@@ -336,11 +337,20 @@ class FrameworkEditor {
       });
     }
 
+    if (SUB_COMPONENTS in service) {
+      const subComponents = (service as any)[SUB_COMPONENTS] as SubComponent[];
+      for (const { identifier, factory } of subComponents) {
+        this.collection.addFactory(identifier, factory, {
+          scope: this.currentLayer,
+        });
+      }
+    }
+
     return this;
   };
 
   entity = <
-    Arg1 extends GeneralIdentifier<Entity>,
+    Arg1 extends Type<Entity>,
     Arg2 extends Deps | ComponentFactory<EntityType>,
     EntityType = IdentifierType<Arg1>,
     Deps = Arg1 extends Type<EntityType>
@@ -380,7 +390,7 @@ class FrameworkEditor {
    * ```
    */
   impl = <
-    Arg1 extends GeneralIdentifier<any>,
+    Arg1 extends Identifier<any>,
     Arg2 extends Type<Trait> | ComponentFactory<Trait> | Trait,
     Arg3 extends Deps,
     Trait = IdentifierType<Arg1>,
@@ -424,7 +434,7 @@ class FrameworkEditor {
    * ```
    */
   override = <
-    Arg1 extends GeneralIdentifier<any>,
+    Arg1 extends Identifier<any>,
     Arg2 extends Type<Trait> | ComponentFactory<Trait> | Trait | null,
     Arg3 extends Deps,
     Trait extends Component = IdentifierType<Arg1>,

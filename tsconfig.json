@@ -40,7 +40,7 @@
     "target": "ES2022",
     "useDefineForClassFields": false,
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
+    "emitDecoratorMetadata": false,
     // Projects
     "composite": true,
     "incremental": true,
