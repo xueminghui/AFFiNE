@@ -199,15 +199,18 @@ export const WithAction: StoryFn = () => {
       <h3 style={{ marginBottom: 8 }}>Disable auto close</h3>
       <Button
         onClick={() => {
-          notify({
-            title: 'Disable auto close',
-            message: 'Test with disable auto close',
-            action: {
-              label: 'UNDO',
-              onClick: () => console.log('undo'),
-              autoClose: false,
+          notify(
+            {
+              title: 'Disable auto close',
+              message: 'Test with disable auto close',
+              action: {
+                label: 'UNDO',
+                onClick: () => console.log('undo'),
+                autoClose: false,
+              },
             },
-          });
+            { duration: 22222222 }
+          );
         }}
       >
         Do not close after action clicked

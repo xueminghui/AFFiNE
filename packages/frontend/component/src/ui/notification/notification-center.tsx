@@ -26,7 +26,13 @@ export function NotificationCenter({ width = 380 }: NotificationCenterProps) {
     []
   );
 
-  return <Toaster style={style} toastOptions={toastOptions} />;
+  return (
+    <Toaster
+      className="affine-notification-center"
+      style={style}
+      toastOptions={toastOptions}
+    />
+  );
 }
 
 /**
