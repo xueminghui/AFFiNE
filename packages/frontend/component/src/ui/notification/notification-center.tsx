@@ -52,3 +52,5 @@ notify.custom = (
     return <Component onDismiss={() => toast.dismiss(id)} />;
   }, options);
 };
+
+notify.dismiss = toast.dismiss;
