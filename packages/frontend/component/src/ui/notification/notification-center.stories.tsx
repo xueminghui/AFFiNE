@@ -50,7 +50,7 @@ export const ThemeAndStyle: StoryFn = () => {
                 return (
                   <Button
                     style={{
-                      backgroundColor: getCardColor(theme, style),
+                      backgroundColor: getCardColor(style, theme),
                       borderColor: getCardBorderColor(style),
                       color: getCardForegroundColor(style),
                     }}
@@ -141,6 +141,76 @@ export const CustomRenderer: StoryFn = () => {
     <Root>
       <Button onClick={() => notify.custom(CustomRender)}>
         Open CustomRenderer
+      </Button>
+    </Root>
+  );
+};
+
+export const WithAction: StoryFn = () => {
+  return (
+    <Root>
+      {styles.map(style => {
+        return (
+          <div key={style} style={{ marginBottom: 20 }}>
+            <h3 style={{ marginBottom: 8 }}>
+              <Label>style</Label>
+              {style}
+            </h3>
+            <div style={{ display: 'flex', gap: 4 }}>
+              {themes.map(theme => {
+                return (
+                  <Button
+                    style={{
+                      backgroundColor: getCardColor(style, theme),
+                      borderColor: getCardBorderColor(style),
+                      color: getCardForegroundColor(style),
+                    }}
+                    key={theme}
+                    onClick={() =>
+                      notify({
+                        title: `${theme} title`,
+                        message: (
+                          <span>
+                            Test with <Label>style</Label>
+                            <code>{style}</code>
+                            &nbsp;and&nbsp;
+                            <Label>theme</Label>
+                            <code>{theme}</code>
+                          </span>
+                        ),
+                        style,
+                        theme,
+                        action: {
+                          label: 'UNDO',
+                          onClick: () => console.log('undo'),
+                        },
+                      })
+                    }
+                  >
+                    <Label>theme</Label> {theme}
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+
+      <h3 style={{ marginBottom: 8 }}>Disable auto close</h3>
+      <Button
+        onClick={() => {
+          notify({
+            title: 'Disable auto close',
+            message: 'Test with disable auto close',
+            action: {
+              label: 'UNDO',
+              onClick: () => console.log('undo'),
+              autoClose: false,
+            },
+          });
+        }}
+      >
+        Do not close after action clicked
       </Button>
     </Root>
   );

@@ -4,6 +4,7 @@ import { createVar, globalStyle, style } from '@vanilla-extract/css';
 export const cardColor = createVar();
 export const cardForeground = createVar();
 export const cardBorderColor = createVar();
+export const actionTextColor = createVar();
 
 export const card = style({
   borderRadius: 8,
@@ -46,6 +47,26 @@ export const title = style({
   lineHeight: '24px',
   fontSize: 15,
   marginRight: 10,
+});
+export const action = style({
+  marginRight: 16,
+});
+export const actionButton = style({
+  color: actionTextColor,
+  position: 'relative',
+  background: 'transparent',
+  border: 'none',
+  '::before': {
+    content: '""',
+    position: 'absolute',
+    inset: 0,
+    borderRadius: 'inherit',
+    backgroundColor: cssVar('black'),
+    opacity: 0.04,
+  },
+  ':hover': {
+    boxShadow: 'none !important',
+  },
 });
 export const closeIcon = style({
   color: `${cardForeground} !important`,

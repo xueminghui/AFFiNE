@@ -3,8 +3,8 @@ import { cssVar } from '@toeverything/theme';
 import type { NotificationStyle, NotificationTheme } from './types';
 
 export const getCardColor = (
-  theme: NotificationTheme,
-  style: NotificationStyle
+  style: NotificationStyle,
+  theme: NotificationTheme
 ) => {
   if (style === 'information') {
     const map: Record<NotificationTheme, string> = {
@@ -27,6 +27,23 @@ export const getCardColor = (
   }
 
   return cssVar('white');
+};
+
+export const getActionTextColor = (
+  style: NotificationStyle,
+  theme: NotificationTheme
+) => {
+  if (style === 'information') {
+    const map: Record<NotificationTheme, string> = {
+      error: cssVar('errorColor'),
+      info: cssVar('processingColor'),
+      success: cssVar('successColor'),
+      warning: cssVar('warningColor'),
+    };
+    return map[theme];
+  }
+
+  return getCardForegroundColor(style);
 };
 
 export const getCardBorderColor = (style: NotificationStyle) => {
