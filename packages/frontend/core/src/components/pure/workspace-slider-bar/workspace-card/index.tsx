@@ -1,4 +1,4 @@
-import { Button, notify, Tooltip } from '@affine/component';
+import { notify, Tooltip } from '@affine/component';
 import { Avatar, type AvatarProps } from '@affine/component/ui/avatar';
 import { Loading } from '@affine/component/ui/loading';
 import { openSettingModalAtom } from '@affine/core/atoms';
@@ -106,20 +106,14 @@ const useSyncEngineSyncProgress = () => {
           }
           setIsOverCapacity(true);
           if (isOwner) {
-            const id = notify.warning({
+            notify.warning({
               title: t['com.affine.payment.storage-limit.title'](),
               message:
                 t['com.affine.payment.storage-limit.description.owner'](),
-              action: (
-                <Button
-                  onClick={() => {
-                    jumpToPricePlan();
-                    notify.dismiss(id);
-                  }}
-                >
-                  {t['com.affine.payment.storage-limit.view']()}
-                </Button>
-              ),
+              action: {
+                label: t['com.affine.payment.storage-limit.view'](),
+                onClick: jumpToPricePlan,
+              },
             });
           } else {
             notify.warning({
