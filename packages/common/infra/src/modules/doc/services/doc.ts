@@ -2,7 +2,7 @@ import { Service } from '../../../framework';
 import { ObjectPool } from '../../../utils';
 import type { Workspace } from '../../workspace';
 import { DocRecordList } from '../entities/record-list';
-import { Doc } from '../layer/doc';
+import { Doc } from '../scopes/doc';
 
 export class DocService extends Service {
   docRecordList = this.framework.createEntity(DocRecordList, '1');
@@ -28,7 +28,7 @@ export class DocService extends Service {
       return { page: exists.obj, release: exists.release };
     }
 
-    const doc = this.framework.createLayer(Doc, docId, {
+    const doc = this.framework.createScope(Doc, docId, {
       blockSuiteDoc,
       record: docRecord,
     });

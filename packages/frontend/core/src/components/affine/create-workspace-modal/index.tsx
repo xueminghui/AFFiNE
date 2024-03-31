@@ -8,7 +8,6 @@ import { DebugLogger } from '@affine/debug';
 import { apis } from '@affine/electron-api';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { _addLocalWorkspace } from '@affine/workspace-impl';
 import {
   buildShowcaseWorkspace,
   initEmptyPage,

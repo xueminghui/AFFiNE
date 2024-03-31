@@ -18,7 +18,6 @@
     "@affine/graphql": "workspace:*",
     "@affine/i18n": "workspace:*",
     "@affine/templates": "workspace:*",
-    "@affine/workspace-impl": "workspace:*",
     "@blocksuite/block-std": "0.14.0-canary-202403250855-4171ecd",
     "@blocksuite/blocks": "0.14.0-canary-202403250855-4171ecd",
     "@blocksuite/global": "0.14.0-canary-202403250855-4171ecd",

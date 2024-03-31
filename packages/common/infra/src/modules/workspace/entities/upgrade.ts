@@ -11,17 +11,17 @@ import {
 } from '../../../blocksuite';
 import { Entity } from '../../../framework';
 import { LiveData } from '../../../livedata';
-import type { Workspace } from '../layer/workspace';
+import type { WorkspaceScope } from '../scopes/workspace';
 import type { WorkspaceMetadata } from '../metadata';
 import type { WorkspaceDestroyService } from '../services/destroy';
-import type { WorkspaceFactory } from '../services/workspace-factory';
+import type { WorkspaceFactory } from '../services/factory';
 
 export class WorkspaceUpgrade extends Entity {
   needUpgrade$ = new LiveData(false);
   upgrading$ = new LiveData(false);
 
   constructor(
-    private readonly workspace: Workspace,
+    private readonly workspace: WorkspaceScope,
     private readonly workspaceFactory: WorkspaceFactory,
     private readonly workspaceDestroy: WorkspaceDestroyService
   ) {

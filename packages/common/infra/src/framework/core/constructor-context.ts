@@ -2,8 +2,7 @@ import type { FrameworkProvider } from './provider';
 
 interface Context {
   provider?: FrameworkProvider;
-  entityId?: string;
-  entityProps?: any;
+  props?: any;
 }
 
 export const CONSTRUCTOR_CONTEXT: {

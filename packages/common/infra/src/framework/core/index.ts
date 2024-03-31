@@ -1,5 +1,5 @@
 export { Entity } from './components/entity';
-export { LayerRoot } from './components/layer-root';
+export { Scope } from './components/scope';
 export { Service } from './components/service';
 export * from './error';
 export { createEvent, OnEvent } from './event';

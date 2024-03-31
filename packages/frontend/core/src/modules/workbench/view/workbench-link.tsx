@@ -3,7 +3,7 @@ import { useLiveData, useService } from '@toeverything/infra';
 import type { To } from 'history';
 import { useCallback } from 'react';
 
-import { Workbench } from '../entities/workbench';
+import { Workbench } from '../scopes/workbench';
 
 export const WorkbenchLink = ({
   to,

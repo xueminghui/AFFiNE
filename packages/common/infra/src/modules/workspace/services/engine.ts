@@ -1,11 +1,11 @@
 import { Service } from '../../../framework';
 import { WorkspaceEngine } from '../entities/engine';
-import type { Workspace } from '../layer/workspace';
+import type { WorkspaceScope } from '../scopes/workspace';
 
 export class WorkspaceEngineService extends Service {
   readonly engine: WorkspaceEngine;
 
-  constructor(workspace: Workspace) {
+  constructor(workspace: WorkspaceScope) {
     super();
 
     this.engine = this.framework.createEntity(WorkspaceEngine, '1', {

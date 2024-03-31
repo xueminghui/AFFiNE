@@ -1,5 +1,6 @@
+import type { Component } from './components/component';
 import type { Entity } from './components/entity';
-import type { LayerRoot } from './components/layer-root';
+import type { Scope } from './components/scope';
 import { withContext } from './constructor-context';
 import {
   CircularDependencyError,
@@ -12,20 +13,20 @@ import type { Framework } from './framework';
 import { parseIdentifier } from './identifier';
 import type {
   ComponentVariant,
-  FrameworkLayer,
+  FrameworkScopeStack,
   GeneralIdentifier,
   IdentifierValue,
 } from './types';
 
 export interface ResolveOptions {
-  sameLayer?: boolean;
+  sameScope?: boolean;
   optional?: boolean;
   noCache?: boolean;
 }
 
 export abstract class FrameworkProvider {
   abstract collection: Framework;
-  abstract scope: FrameworkLayer;
+  abstract scope: FrameworkScopeStack;
   abstract getRaw(identifier: IdentifierValue, options?: ResolveOptions): any;
   abstract getAllRaw(
     identifier: IdentifierValue,
@@ -62,31 +63,28 @@ export abstract class FrameworkProvider {
 
   createEntity = <
     T extends Entity,
-    Props extends T extends Entity<infer P> ? P : never,
+    Props extends T extends Component<infer P> ? P : never,
   >(
     identifier: GeneralIdentifier<T>,
-    id: string,
-    ...[props]: Props extends undefined ? [] : [Props]
+    props: Props
   ): T => {
     return withContext(
       () =>
         this.getRaw(parseIdentifier(identifier), {
           noCache: true,
-          sameLayer: true,
+          sameScope: true,
         }),
       {
-        entityId: id,
-        entityProps: props,
+        props: props,
       }
     );
   };
 
-  createLayer = <
-    T extends LayerRoot,
-    Props extends T extends LayerRoot<infer P> ? P : never,
+  createScope = <
+    T extends Scope,
+    Props extends T extends Component<infer P> ? P : never,
   >(
     root: GeneralIdentifier<T>,
-    id: string,
     ...[props]: Props extends undefined ? [] : [Props]
   ): T => {
     const newProvider = this.collection.provider(
@@ -96,11 +94,10 @@ export abstract class FrameworkProvider {
     return withContext(
       () =>
         newProvider.getRaw(parseIdentifier(root), {
-          sameLayer: true,
+          sameScope: true,
         }),
       {
-        entityId: id,
-        entityProps: props,
+        props,
       }
     );
   };
@@ -162,7 +159,7 @@ class Resolver extends FrameworkProvider {
   getRaw(
     identifier: IdentifierValue,
     {
-      sameLayer = false,
+      sameScope = false,
       optional = false,
       noCache = false,
     }: ResolveOptions = {}
@@ -172,9 +169,9 @@ class Resolver extends FrameworkProvider {
       this.provider.scope
     );
     if (!factory) {
-      if (this.provider.parent && !sameLayer) {
+      if (this.provider.parent && !sameScope) {
         return this.provider.parent.getRaw(identifier, {
-          sameLayer,
+          sameScope: sameScope,
           optional,
           noCache,
         });
@@ -213,7 +210,7 @@ class Resolver extends FrameworkProvider {
 
   getAllRaw(
     identifier: IdentifierValue,
-    { sameLayer = false, noCache }: ResolveOptions = {}
+    { sameScope = false, noCache }: ResolveOptions = {}
   ): Map<ComponentVariant, any> {
     const vars = this.provider.collection.getFactoryAll(
       identifier,
@@ -221,7 +218,7 @@ class Resolver extends FrameworkProvider {
     );
 
     if (vars === undefined) {
-      if (this.provider.parent && !sameLayer) {
+      if (this.provider.parent && !sameScope) {
         return this.provider.parent.getAllRaw(identifier);
       }
 

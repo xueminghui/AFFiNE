@@ -1,9 +1,10 @@
-import { useLiveData, useService } from '@toeverything/infra';
+import { Scope, useLiveData, useScope, useService } from '@toeverything/infra';
 import { useCallback, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 
-import type { View } from '../entities/view';
-import { Workbench } from '../entities/workbench';
+import type { View } from '../scopes/view';
+import { Workbench } from '../scopes/workbench';
+import { WorkbenchService } from '../services/workbench';
 import { useBindWorkbenchToBrowserRouter } from './browser-adapter';
 import { useBindWorkbenchToDesktopRouter } from './desktop-adapter';
 import { SplitView } from './split-view/split-view';
@@ -15,7 +16,7 @@ const useAdapter = environment.isDesktop
   : useBindWorkbenchToBrowserRouter;
 
 export const WorkbenchRoot = () => {
-  const workbench = useService(Workbench);
+  const workbench = useService(WorkbenchService).workbench;
 
   // for debugging
   (window as any).workbench = workbench;
@@ -43,17 +44,19 @@ export const WorkbenchRoot = () => {
   }, [basename, workbench.basename$]);
 
   return (
-    <SplitView
-      className={styles.workbenchRootContainer}
-      views={views}
-      renderer={panelRenderer}
-      onMove={onMove}
-    />
+    <Scope scope={workbench}>
+      <SplitView
+        className={styles.workbenchRootContainer}
+        views={views}
+        renderer={panelRenderer}
+        onMove={onMove}
+      />
+    </Scope>
   );
 };
 
 const WorkbenchView = ({ view, index }: { view: View; index: number }) => {
-  const workbench = useService(Workbench);
+  const workbench = useScope(Workbench);
 
   const handleOnFocus = useCallback(() => {
     workbench.active(index);

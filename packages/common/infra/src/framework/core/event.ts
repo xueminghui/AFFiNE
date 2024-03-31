@@ -25,7 +25,7 @@ export class EventBus {
     private readonly parent?: EventBus
   ) {
     const handlers = provider.getAll(EventHandler, {
-      sameLayer: true,
+      sameScope: true,
     });
 
     for (const handler of handlers.values()) {

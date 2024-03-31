@@ -3,10 +3,10 @@ import { assertEquals } from '@blocksuite/global/utils';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
 import { Service } from '../../../framework';
-import type { Workspace } from '../layer/workspace';
 import type { WorkspaceMetadata } from '../metadata';
+import type { WorkspaceScope } from '../scopes/workspace';
 import type { WorkspaceDestroyService } from './destroy';
-import type { WorkspaceFactory } from './workspace-factory';
+import type { WorkspaceFactory } from './factory';
 
 export class WorkspaceTransformService extends Service {
   constructor(
@@ -20,7 +20,7 @@ export class WorkspaceTransformService extends Service {
    * helper function to transform local workspace to cloud workspace
    */
   transformLocalToCloud = async (
-    local: Workspace
+    local: WorkspaceScope
   ): Promise<WorkspaceMetadata> => {
     assertEquals(local.flavour, WorkspaceFlavour.LOCAL);
 

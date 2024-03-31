@@ -10,7 +10,7 @@ import type {
 } from '../../../sync';
 import type { WorkspaceProfileInfo } from '../entities/profile';
 import type { WorkspaceMetadata } from '../metadata';
-import type { WorkspaceOpenOptions } from '../open-options';
+import type { WorkspaceScope } from '../scopes/workspace';
 
 export interface WorkspaceEngineProvider {
   getDocServer(): DocServer | null;
@@ -40,7 +40,7 @@ export interface WorkspaceFlavourProvider {
 
   getWorkspaceProfile(id: string): Promise<WorkspaceProfileInfo | undefined>;
 
-  getEngineProvider(openOptions: WorkspaceOpenOptions): WorkspaceEngineProvider;
+  getEngineProvider(workspace: WorkspaceScope): WorkspaceEngineProvider;
 }
 
 export const WorkspaceFlavourProvider =

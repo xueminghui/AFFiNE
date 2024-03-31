@@ -4,7 +4,7 @@ import { catchError, from, map, NEVER, switchMap } from 'rxjs';
 import { Entity } from '../../../framework';
 import { effect, LiveData, onComplete, onStart } from '../../../livedata';
 import type { GlobalCache } from '../../storage';
-import type { Workspace } from '../layer/workspace';
+import type { WorkspaceScope } from '../scopes/workspace';
 import type { WorkspaceMetadata } from '../metadata';
 import type { WorkspaceFlavourProvider } from '../providers/flavour';
 
@@ -85,7 +85,7 @@ export class WorkspaceProfile extends Entity<{ metadata: WorkspaceMetadata }> {
     })
   );
 
-  syncWithWorkspace(workspace: Workspace) {
+  syncWithWorkspace(workspace: WorkspaceScope) {
     this.setCache({
       avatar:
         workspace.docCollection.meta.avatar ?? this.profile$.value?.avatar,

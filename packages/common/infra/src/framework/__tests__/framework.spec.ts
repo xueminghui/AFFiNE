@@ -8,9 +8,9 @@ import {
   DuplicateDefinitionError,
   Entity,
   Framework,
-  LayerRoot,
   MissingDependencyError,
   RecursionLimitError,
+  Scope,
   Service,
 } from '..';
 import { OnEvent } from '../core/event';
@@ -43,7 +43,10 @@ describe('framework', () => {
     framework.service(TestService).entity(TestEntity, [TestService]);
 
     const provider = framework.provider();
-    const entity = provider.createEntity(TestEntity, '123', { name: 'test' });
+    const entity = provider.createEntity(TestEntity, {
+      id: '123',
+      name: 'test',
+    });
     expect(entity.id).toBe('123');
     expect(entity.test.a).toBe('b');
     expect(entity.props.name).toBe('test');
@@ -256,60 +259,68 @@ describe('framework', () => {
     expect(provider.get(TestService).value).toEqual(123);
   });
 
-  test('layer', () => {
+  test('scope', () => {
     const framework = new Framework();
 
-    class System extends Service {
+    class SystemService extends Service {
       appName = 'affine';
     }
 
-    framework.service(System);
+    framework.service(SystemService);
 
-    class Workspace extends LayerRoot {
-      constructor(public readonly system: System) {
+    class WorkspaceScope extends Scope {}
+
+    class WorkspaceService extends Service {
+      constructor(public system: SystemService) {
         super();
       }
     }
 
-    framework.layer(Workspace).entity(Workspace, [System]);
-    class Page extends LayerRoot {
+    framework.scope(WorkspaceScope).service(WorkspaceService, [SystemService]);
+
+    class PageScope extends Scope {}
+
+    class PageService extends Service {
       constructor(
-        public system: System,
-        public workspace: Workspace
+        public system: SystemService,
+        public workspace: WorkspaceService
       ) {
         super();
       }
     }
 
-    framework.layer(Workspace).layer(Page).entity(Page, [System, Workspace]);
+    framework
+      .scope(WorkspaceScope)
+      .scope(PageScope)
+      .service(PageService, [SystemService, WorkspaceService]);
 
-    class Editor extends LayerRoot {
+    class EditorScope extends Scope {
       constructor(public page: Page) {
         super();
       }
     }
 
-    framework.layer(Workspace).layer(Page).layer(Editor).root(Editor, [Page]);
+    framework.scope(Workspace).scope(Page).scope(Editor).root(Editor, [Page]);
 
     const root = framework.provider();
-    expect(root.get(System).appName).toEqual('affine');
+    expect(root.get(SystemService).appName).toEqual('affine');
     expect(() => root.get(Workspace)).toThrowError(ComponentNotFoundError);
 
-    const workspace = root.createLayer(Workspace, 'test-workspace');
+    const workspace = root.createScope(Workspace, 'test-workspace');
     expect(workspace.id).toEqual('test-workspace');
     expect(workspace.system.appName).toEqual('affine');
     expect(() => root.get(Page)).toThrowError(ComponentNotFoundError);
 
-    const page = workspace.createLayer(Page, 'test-page');
+    const page = workspace.createScope(Page, 'test-page');
     expect(page.id).toEqual('test-page');
     expect(page.workspace.id).toEqual('test-workspace');
     expect(page.system.appName).toEqual('affine');
 
-    const editor = page.createLayer(Editor, 'test-editor');
+    const editor = page.createScope(Editor, 'test-editor');
     expect(editor.id).toEqual('test-editor');
   });
 
-  test('layer event', () => {
+  test('scope event', () => {
     const framework = new Framework();
 
     const event = createEvent<{ value: number }>('test-event');
@@ -323,10 +334,10 @@ describe('framework', () => {
       }
     }
 
-    class TestLayer extends LayerRoot {}
+    class TestScope extends Scope {}
 
     @OnEvent(event, p => p.onTestEvent)
-    class TestLayerService extends Service {
+    class TestScopeService extends Service {
       value = 0;
 
       onTestEvent(payload: { value: number }) {
@@ -334,17 +345,13 @@ describe('framework', () => {
       }
     }
 
-    framework
-      .service(TestService)
-      .layer(TestLayer)
-      .root(TestLayer)
-      .service(TestLayerService);
+    framework.service(TestService).scope(TestScope).service(TestScopeService);
 
     const provider = framework.provider();
-    const layer = provider.createLayer(TestLayer, '1');
-    layer.emitEvent(event, { value: 123 });
+    const scope = provider.createScope(TestScope, '1');
+    scope.emitEvent(event, { value: 123 });
     expect(provider.get(TestService).value).toEqual(0);
-    expect(layer.get(TestLayerService).value).toEqual(123);
+    expect(scope.get(TestScopeService).value).toEqual(123);
   });
 
   test('dispose', () => {
@@ -363,7 +370,7 @@ describe('framework', () => {
     framework.service(System);
 
     let isWorkspaceDisposed = false;
-    class Workspace extends LayerRoot {
+    class Workspace extends Scope {
       constructor(public readonly system: System) {
         super();
       }
@@ -386,7 +393,7 @@ describe('framework', () => {
     }
 
     framework
-      .layer(Workspace)
+      .scope(Workspace)
       .entity(Workspace, [System])
       .service(WorkspacePageService, [Workspace]);
 
@@ -395,7 +402,7 @@ describe('framework', () => {
 
       {
         // create a workspace
-        using workspace = root.createLayer(Workspace, 'test-workspace');
+        using workspace = root.createScope(Workspace, 'test-workspace');
         const pageService = workspace.get(WorkspacePageService);
 
         expect(pageService).instanceOf(WorkspacePageService);

@@ -1,7 +1,7 @@
 import { IconButton } from '@affine/component';
 import { WindowsAppControls } from '@affine/core/components/pure/header/windows-app-controls';
 import { RightSidebarIcon } from '@blocksuite/icons';
-import { useLiveData, useService } from '@toeverything/infra';
+import { useLiveData, useScope, useService } from '@toeverything/infra';
 import { useAtomValue } from 'jotai';
 import { Suspense, useCallback } from 'react';
 
@@ -11,8 +11,8 @@ import {
   SidebarSwitch,
 } from '../../../components/app-sidebar';
 import { RightSidebar } from '../../right-sidebar';
+import { View } from '../scopes/view';
 import * as styles from './route-container.css';
-import { useView } from './use-view';
 import { useViewPosition } from './use-view-position';
 
 export interface Props {
@@ -43,7 +43,7 @@ const ToggleButton = ({
 };
 
 export const RouteContainer = ({ route }: Props) => {
-  const view = useView();
+  const view = useScope(View);
   const viewPosition = useViewPosition();
   const leftSidebarOpen = useAtomValue(appSidebarOpenAtom);
   const rightSidebar = useService(RightSidebar);

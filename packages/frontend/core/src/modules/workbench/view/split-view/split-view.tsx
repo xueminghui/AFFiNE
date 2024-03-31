@@ -17,8 +17,8 @@ import type { HTMLAttributes, RefObject } from 'react';
 import { useCallback, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
-import type { View } from '../../entities/view';
-import { Workbench } from '../../entities/workbench';
+import type { View } from '../../scopes/view';
+import { Workbench } from '../../scopes/workbench';
 import { SplitViewPanel } from './panel';
 import { ResizeHandle } from './resize-handle';
 import * as styles from './split-view.css';

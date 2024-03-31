@@ -9,8 +9,8 @@ import { MemoryBlobStorage } from '../../../sync/blob/blob';
 import type { GlobalState } from '../../storage';
 import type { WorkspaceProfileInfo } from '../entities/profile';
 import { globalBlockSuiteSchema } from '../global-schema';
+import type { WorkspaceScope } from '../scopes/workspace';
 import type { WorkspaceMetadata } from '../metadata';
-import type { WorkspaceOpenOptions } from '../open-options';
 import type {
   WorkspaceEngineProvider,
   WorkspaceFlavourProvider,
@@ -104,9 +104,7 @@ export class TestingWorkspaceLocalProvider
       avatar: bs.meta.avatar,
     };
   }
-  getEngineProvider(
-    openOptions: WorkspaceOpenOptions
-  ): WorkspaceEngineProvider {
+  getEngineProvider(workspace: WorkspaceScope): WorkspaceEngineProvider {
     return {
       getDocStorage: () => {
         return this.docStorage;
@@ -119,7 +117,7 @@ export class TestingWorkspaceLocalProvider
       },
       getLocalBlobStorage: () => {
         return new MemoryBlobStorage(
-          wrapMemento(this.store, openOptions.metadata.id + '/blobs/')
+          wrapMemento(this.store, workspace.id + '/blobs/')
         );
       },
       getRemoteBlobStorages() {

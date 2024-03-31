@@ -1,11 +1,12 @@
-import { useLiveData, useService } from '@toeverything/infra';
+import { useLiveData, useScope } from '@toeverything/infra';
 
-import { Workbench } from '../entities/workbench';
-import { useView } from './use-view';
+import { View } from '../scopes/view';
+import { Workbench } from '../scopes/workbench';
 
 export function useIsActiveView() {
-  const workbench = useService(Workbench);
-  const currentView = useView();
+  const workbench = useScope(Workbench);
+  const view = useScope(View);
+
   const activeView = useLiveData(workbench.activeView$);
-  return currentView === activeView;
+  return view === activeView;
 }

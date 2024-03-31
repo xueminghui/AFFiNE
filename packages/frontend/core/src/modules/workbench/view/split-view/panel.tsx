@@ -7,7 +7,7 @@ import {
   SoloViewIcon,
 } from '@blocksuite/icons';
 import { useSortable } from '@dnd-kit/sortable';
-import { useLiveData, useService } from '@toeverything/infra';
+import { useLiveData, useScope } from '@toeverything/infra';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import type { SetStateAction } from 'jotai';
 import type {
@@ -18,8 +18,8 @@ import type {
 } from 'react';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import type { View } from '../../entities/view';
-import { Workbench } from '../../entities/workbench';
+import type { View } from '../../scopes/view';
+import { Workbench } from '../../scopes/workbench';
 import { SplitViewIndicator } from './indicator';
 import * as styles from './split-view.css';
 
@@ -40,7 +40,7 @@ export const SplitViewPanel = memo(function SplitViewPanel({
   const [indicatorPressed, setIndicatorPressed] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const size = useLiveData(view.size$);
-  const workbench = useService(Workbench);
+  const workbench = useScope(Workbench);
   const activeView = useLiveData(workbench.activeView$);
   const views = useLiveData(workbench.views$);
   const isLast = views[views.length - 1] === view;
@@ -109,7 +109,7 @@ export const SplitViewPanel = memo(function SplitViewPanel({
 
 const SplitViewMenu = ({ view }: { view: View }) => {
   const t = useAFFiNEI18N();
-  const workbench = useService(Workbench);
+  const workbench = useScope(Workbench);
   const views = useLiveData(workbench.views$);
 
   const viewIndex = views.findIndex(v => v === view);

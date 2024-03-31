@@ -1,13 +1,12 @@
-import { useService } from '@toeverything/infra';
+import { useScope } from '@toeverything/infra';
 import { useEffect, useState } from 'react';
 
-import type { View } from '../entities/view';
-import { Workbench } from '../entities/workbench';
-import { useView } from './use-view';
+import { View } from '../scopes/view';
+import { Workbench } from '../scopes/workbench';
 
 export const useViewPosition = () => {
-  const workbench = useService(Workbench);
-  const view = useView();
+  const workbench = useScope(Workbench);
+  const view = useScope(View);
 
   const [position, setPosition] = useState(() =>
     calcPosition(view, workbench.views$.value)

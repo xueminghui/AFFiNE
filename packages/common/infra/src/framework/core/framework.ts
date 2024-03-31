@@ -1,17 +1,17 @@
 import type { Component } from './components/component';
 import type { Entity } from './components/entity';
-import type { LayerRoot } from './components/layer-root';
+import type { Scope } from './components/scope';
 import type { Service } from './components/service';
-import { DEFAULT_VARIANT, ROOT_LAYER, SUB_COMPONENTS } from './consts';
+import { DEFAULT_VARIANT, ROOT_SCOPE, SUB_COMPONENTS } from './consts';
 import { DuplicateDefinitionError } from './error';
 import { parseIdentifier } from './identifier';
-import { stringifyLayer } from './layer';
 import type { FrameworkProvider } from './provider';
 import { BasicFrameworkProvider } from './provider';
+import { stringifyScope } from './scope';
 import type {
   ComponentFactory,
   ComponentVariant,
-  FrameworkLayer,
+  FrameworkScopeStack,
   GeneralIdentifier,
   Identifier,
   IdentifierType,
@@ -153,10 +153,10 @@ export class Framework {
   }
 
   /**
-   * @see {@link FrameworkEditor.layer}
+   * @see {@link FrameworkEditor.scope}
    */
-  get layer() {
-    return new FrameworkEditor(this).layer;
+  get scope() {
+    return new FrameworkEditor(this).scope;
   }
 
   /**
@@ -172,7 +172,10 @@ export class Framework {
   addValue<T>(
     identifier: GeneralIdentifier<T>,
     value: T,
-    { scope, override }: { scope?: FrameworkLayer; override?: boolean } = {}
+    {
+      scope,
+      override,
+    }: { scope?: FrameworkScopeStack; override?: boolean } = {}
   ) {
     this.addFactory(parseIdentifier(identifier) as Identifier<T>, () => value, {
       scope,
@@ -186,10 +189,13 @@ export class Framework {
   addFactory<T>(
     identifier: GeneralIdentifier<T>,
     factory: ComponentFactory<T>,
-    { scope, override }: { scope?: FrameworkLayer; override?: boolean } = {}
+    {
+      scope,
+      override,
+    }: { scope?: FrameworkScopeStack; override?: boolean } = {}
   ) {
     // convert scope to string
-    const normalizedScope = stringifyLayer(scope ?? ROOT_LAYER);
+    const normalizedScope = stringifyScope(scope ?? ROOT_SCOPE);
     const normalizedIdentifier = parseIdentifier(identifier);
     const normalizedVariant = normalizedIdentifier.variant ?? DEFAULT_VARIANT;
 
@@ -210,8 +216,8 @@ export class Framework {
     this.components.set(normalizedScope, services);
   }
 
-  remove(identifier: IdentifierValue, scope: FrameworkLayer = ROOT_LAYER) {
-    const normalizedScope = stringifyLayer(scope);
+  remove(identifier: IdentifierValue, scope: FrameworkScopeStack = ROOT_SCOPE) {
+    const normalizedScope = stringifyScope(scope);
     const normalizedIdentifier = parseIdentifier(identifier);
     const normalizedVariant = normalizedIdentifier.variant ?? DEFAULT_VARIANT;
 
@@ -241,7 +247,7 @@ export class Framework {
    * @param parent The parent service provider, it is required if the scope is not the root scope.
    */
   provider(
-    scope: FrameworkLayer = ROOT_LAYER,
+    scope: FrameworkScopeStack = ROOT_SCOPE,
     parent: FrameworkProvider | null = null
   ): FrameworkProvider {
     return new BasicFrameworkProvider(this, scope, parent);
@@ -252,10 +258,10 @@ export class Framework {
    */
   getFactory(
     identifier: IdentifierValue,
-    scope: FrameworkLayer = ROOT_LAYER
+    scope: FrameworkScopeStack = ROOT_SCOPE
   ): ComponentFactory | undefined {
     return this.components
-      .get(stringifyLayer(scope))
+      .get(stringifyScope(scope))
       ?.get(identifier.identifierName)
       ?.get(identifier.variant ?? DEFAULT_VARIANT);
   }
@@ -265,10 +271,10 @@ export class Framework {
    */
   getFactoryAll(
     identifier: IdentifierValue,
-    scope: FrameworkLayer = ROOT_LAYER
+    scope: FrameworkScopeStack = ROOT_SCOPE
   ): Map<ComponentVariant, ComponentFactory> {
     return new Map(
-      this.components.get(stringifyLayer(scope))?.get(identifier.identifierName)
+      this.components.get(stringifyScope(scope))?.get(identifier.identifierName)
     );
   }
 
@@ -296,7 +302,7 @@ export class Framework {
  * A helper class to edit a framework.
  */
 class FrameworkEditor {
-  private currentLayer: FrameworkLayer = ROOT_LAYER;
+  private currentScopeStack: FrameworkScopeStack = ROOT_SCOPE;
 
   constructor(private readonly collection: Framework) {}
 
@@ -323,17 +329,17 @@ class FrameworkEditor {
   ): this => {
     if (arg2 instanceof Function) {
       this.collection.addFactory<any>(service as any, arg2 as any, {
-        scope: this.currentLayer,
+        scope: this.currentScopeStack,
       });
     } else if (arg2 instanceof Array || arg2 === undefined) {
       this.collection.addFactory<any>(
         service as any,
         dependenciesToFactory(service, arg2 as any),
-        { scope: this.currentLayer }
+        { scope: this.currentScopeStack }
       );
     } else {
       this.collection.addValue<any>(service as any, arg2, {
-        scope: this.currentLayer,
+        scope: this.currentScopeStack,
       });
     }
 
@@ -341,7 +347,7 @@ class FrameworkEditor {
       const subComponents = (service as any)[SUB_COMPONENTS] as SubComponent[];
       for (const { identifier, factory } of subComponents) {
         this.collection.addFactory(identifier, factory, {
-          scope: this.currentLayer,
+          scope: this.currentScopeStack,
         });
       }
     }
@@ -362,13 +368,13 @@ class FrameworkEditor {
   ): this => {
     if (arg2 instanceof Function) {
       this.collection.addFactory<any>(entity as any, arg2 as any, {
-        scope: this.currentLayer,
+        scope: this.currentScopeStack,
       });
     } else {
       this.collection.addFactory<any>(
         entity as any,
         dependenciesToFactory(entity, arg2 as any),
-        { scope: this.currentLayer }
+        { scope: this.currentScopeStack }
       );
     }
 
@@ -406,11 +412,11 @@ class FrameworkEditor {
       this.collection.addFactory<any>(
         identifier,
         dependenciesToFactory(arg2, arg3 as any[]),
-        { scope: this.currentLayer }
+        { scope: this.currentScopeStack }
       );
     } else {
       this.collection.addValue(identifier, arg2 as any, {
-        scope: this.currentLayer,
+        scope: this.currentScopeStack,
       });
     }
 
@@ -447,17 +453,20 @@ class FrameworkEditor {
     ...[arg3]: Arg3 extends [] ? [] : [Arg3]
   ): this => {
     if (arg2 === null) {
-      this.collection.remove(parseIdentifier(identifier), this.currentLayer);
+      this.collection.remove(
+        parseIdentifier(identifier),
+        this.currentScopeStack
+      );
       return this;
     } else if (arg2 instanceof Function) {
       this.collection.addFactory<any>(
         identifier,
         dependenciesToFactory(arg2, arg3 as any[]),
-        { scope: this.currentLayer, override: true }
+        { scope: this.currentScopeStack, override: true }
       );
     } else {
       this.collection.addValue(identifier, arg2 as any, {
-        scope: this.currentLayer,
+        scope: this.currentScopeStack,
         override: true,
       });
     }
@@ -476,16 +485,20 @@ class FrameworkEditor {
    * services.scope(ScopeA).add(XXXService, ...);
    * ```
    */
-  layer = (root: Type<LayerRoot>): this => {
-    this.currentLayer = [
-      ...this.currentLayer,
-      parseIdentifier(root).identifierName,
+  scope = (scope: Type<Scope>): this => {
+    this.currentScopeStack = [
+      ...this.currentScopeStack,
+      parseIdentifier(scope).identifierName,
     ];
+
+    this.collection.addFactory<any>(
+      scope as any,
+      dependenciesToFactory(scope, [] as any),
+      { scope: this.currentScopeStack }
+    );
 
     return this;
   };
-
-  root = this.entity;
 }
 
 /**

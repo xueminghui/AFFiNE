@@ -6,7 +6,7 @@ export type Type<T = any> = abstract new (...args: any) => T;
 export type ComponentFactory<T = any> = (provider: FrameworkProvider) => T;
 export type ComponentVariant = string;
 
-export type FrameworkLayer = string[];
+export type FrameworkScopeStack = string[];
 
 export type IdentifierValue = {
   identifierName: string;
